@@ -24,7 +24,7 @@ import { colors, fonts, spacing } from '@/src/theme';
 export default function MeetDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { state, accept, decline, withdraw, cancelConfirmed } = useAppStore();
+  const { state, accept, decline, withdraw, cancelConfirmed, addMemory } = useAppStore();
   const [declineOpen, setDeclineOpen] = useState(false);
   const [declineNote, setDeclineNote] = useState('');
   const [calendarHint, setCalendarHint] = useState(false);
@@ -164,6 +164,24 @@ export default function MeetDetailScreen() {
               {them?.name ?? 'They'} hasn’t answered yet. You can wait, or withdraw this suggestion.
             </Body>
             <Button label="Withdraw suggestion" variant="ghost" onPress={() => withdraw(meet.id)} />
+          </View>
+        ) : null}
+
+        {meet.status === 'confirmed' && past ? (
+          <View style={{ marginTop: spacing.xl, gap: 10 }}>
+            <Button
+              label="Save as a memory"
+              variant="secondary"
+              onPress={() =>
+                addMemory({
+                  meetId: meet.id,
+                  title: revision.location ?? formatLongDate(revision.startsAt),
+                  note: revision.notes ?? 'A night we keep.',
+                  mood: 'cozy',
+                  authorId: state.currentPartnerId!,
+                })
+              }
+            />
           </View>
         ) : null}
 

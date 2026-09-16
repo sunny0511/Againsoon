@@ -148,3 +148,26 @@ export function upcomingDays(count = 14, from = new Date()): Date[] {
 export function daysAround(count = 14, from = new Date()): Date[] {
   return upcomingDays(count, from);
 }
+
+export function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function addMonths(date: Date, amount: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + amount, 1);
+}
+
+export function formatMonthTitle(date: Date): string {
+  return `${MONTHS_LONG[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+export function monthCells(anchor: Date): Date[] {
+  const start = startOfMonth(anchor);
+  const lead = start.getDay();
+  const first = addDays(start, -lead);
+  return Array.from({ length: 42 }, (_, index) => addDays(first, index));
+}
+
+export function rangesOverlap(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
+  return aStart.getTime() < bEnd.getTime() && bStart.getTime() < aEnd.getTime();
+}

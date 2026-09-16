@@ -1,5 +1,5 @@
-import { isInPast } from '@/src/lib/dates';
-import type { Couple, Meet, MeetRevision, Partner, PersistedState } from '@/src/types';
+import { isInPast, startOfDay } from '@/src/lib/dates';
+import type { Couple, KeyDate, Meet, MeetRevision, Partner, PersistedState } from '@/src/types';
 
 export function currentPartner(state: PersistedState): Partner | null {
   if (!state.couple || !state.currentPartnerId) return null;
@@ -96,4 +96,35 @@ export function pendingOnDay(meets: Meet[], day: Date): Meet[] {
       start.getDate() === day.getDate()
     );
   });
+}
+
+export function nextKeyDate(dates: KeyDate[], now = new Date()): { item: KeyDate; when: Date } | null {
+  const ranked = dates
+    .map((item) => ({ item, when: nextKeyOccurrence(item, now) }))
+    .sort((a, b) => a.when.getTime() - b.when.getTime());
+  return ranked[0] ?? null;
+}
+
+export function nextKeyOccurrence(item: KeyDate, now = new Date()): Date {
+  if (!item.recurringYearly && item.year) {
+    return new Date(item.year, item.month - 1, item.day);
+  }
+  const thisYear = new Date(now.getFullYear(), item.month - 1, item.day);
+  if (thisYear.getTime() >= startOfDay(now).getTime()) return thisYear;
+  return new Date(now.getFullYear() + 1, item.month - 1, item.day);
+}
+
+export function datesThisCycle(meets: Meet[], cadenceDays: number, now = new Date()): Meet[] {
+  const from = now.getTime() - cadenceDays * 86400000;
+  return meets.filter((meet) => {
+    if (meet.status !== 'confirmed') return false;
+    const start = new Date(latestRevision(meet).startsAt).getTime();
+    return start >= from && start <= now.getTime() + 86400000;
+  });
+}
+
+export function dateGoalLabel(cadenceDays: number): string {
+  if (cadenceDays === 7) return 'Once a week';
+  if (cadenceDays === 14) return 'Every two weeks';
+  return 'Once a month';
 }

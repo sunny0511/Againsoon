@@ -10,21 +10,37 @@ import { defaultProposeInput } from '@/src/lib/propose';
 
 export default function ProposeScreen() {
   const router = useRouter();
-  const { counterOf } = useLocalSearchParams<{ counterOf?: string }>();
+  const { counterOf, location: locParam, notes: notesParam, startsAt } = useLocalSearchParams<{
+    counterOf?: string;
+    location?: string;
+    notes?: string;
+    startsAt?: string;
+  }>();
   const { state, propose, counter } = useAppStore();
   const them = otherPartner(state);
   const existing = state.meets.find((meet) => meet.id === counterOf);
   const seed = existing ? latestRevision(existing) : null;
 
+  const paramSeed =
+    startsAt || locParam || notesParam
+      ? {
+          startsAt: typeof startsAt === 'string' ? startsAt : undefined,
+          location: typeof locParam === 'string' ? locParam : undefined,
+          notes: typeof notesParam === 'string' ? notesParam : undefined,
+        }
+      : null;
+
   const [when, setWhen] = useState(() =>
     defaultProposeInput(
       seed
         ? { startsAt: seed.startsAt, endsAt: seed.endsAt, location: seed.location, notes: seed.notes }
-        : null,
+        : paramSeed?.startsAt
+          ? { startsAt: paramSeed.startsAt, location: paramSeed.location, notes: paramSeed.notes }
+          : null,
     ),
   );
-  const [location, setLocation] = useState(seed?.location ?? '');
-  const [notes, setNotes] = useState(seed?.notes ?? '');
+  const [location, setLocation] = useState(seed?.location ?? paramSeed?.location ?? '');
+  const [notes, setNotes] = useState(seed?.notes ?? paramSeed?.notes ?? '');
 
   const title = useMemo(
     () => (existing ? 'Suggest a different time' : 'When should we meet?'),

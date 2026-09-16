@@ -12,7 +12,7 @@ import { spacing } from '@/src/theme';
 
 export default function YouScreen() {
   const router = useRouter();
-  const { state, switchPartner, namePartner, reset, setLocationSharing } = useAppStore();
+  const { state, switchPartner, namePartner, reset, setLocationSharing, setDateGoal } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const [partnerName, setPartnerName] = useState(them?.isPlaceholder ? '' : (them?.name ?? ''));
@@ -79,6 +79,28 @@ export default function YouScreen() {
             You’re viewing the app as {me.name}. Switch to see pending proposals from the other side.
           </Body>
           <Button label={`Switch to ${them.name}`} variant="secondary" onPress={switchPartner} />
+        </Card>
+
+        <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
+          <Display size={22}>Date night goal</Display>
+          <Body muted small>
+            Againsoon tracks confirmed meets against a cadence — weekly, fortnightly, or monthly.
+          </Body>
+          <Button
+            label="Once a week"
+            variant={state.dateGoal.cadenceDays === 7 ? 'primary' : 'ghost'}
+            onPress={() => setDateGoal(7)}
+          />
+          <Button
+            label="Every two weeks"
+            variant={state.dateGoal.cadenceDays === 14 ? 'primary' : 'ghost'}
+            onPress={() => setDateGoal(14)}
+          />
+          <Button
+            label="Once a month"
+            variant={state.dateGoal.cadenceDays === 30 ? 'primary' : 'ghost'}
+            onPress={() => setDateGoal(30)}
+          />
         </Card>
 
         <Card style={{ gap: spacing.md, marginTop: spacing.md }}>

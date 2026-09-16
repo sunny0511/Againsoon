@@ -1,27 +1,27 @@
 import { Platform, type ViewStyle } from 'react-native';
 
 export const colors = {
-  canvas: '#17121C',
-  canvasDeep: '#100D14',
-  ink: '#F6EFE8',
-  inkMuted: '#C4B4C0',
-  inkSoft: '#8B7A88',
-  accent: '#E08A6A',
-  accentDeep: '#F0A790',
-  accentSoft: '#3A2430',
-  sage: '#7CBA9F',
-  sageSoft: '#1E322C',
+  canvas: '#10141C',
+  canvasDeep: '#0B0E14',
+  ink: '#F4EFE6',
+  inkMuted: '#B9B3C4',
+  inkSoft: '#7F7788',
+  accent: '#E8A56A',
+  accentDeep: '#F0C08A',
+  accentSoft: '#3A2A22',
+  sage: '#5FBFB0',
+  sageSoft: '#16332F',
   gold: '#E0B25C',
   goldSoft: '#3A2E1C',
-  card: '#231B28',
-  cardBorder: '#3C3244',
+  card: '#1A1F2A',
+  cardBorder: '#2C3342',
   danger: '#E08A8A',
   dangerSoft: '#3A2228',
-  white: '#F6EFE8',
-  onAccent: '#1A141F',
+  white: '#F4EFE6',
+  onAccent: '#141018',
   invert: '#F3EBE3',
-  onInvert: '#1A141F',
-  highlight: '#2F2434',
+  onInvert: '#10141C',
+  highlight: '#242A36',
 } as const;
 
 export const spacing = {
@@ -52,7 +52,7 @@ export const fonts = {
 
 export const shadow: ViewStyle = Platform.select({
   web: {
-    boxShadow: '0 16px 40px rgba(0, 0, 0, 0.35)',
+    boxShadow: '0 16px 40px rgba(0, 0, 0, 0.28)',
   },
   default: {
     shadowColor: '#000000',

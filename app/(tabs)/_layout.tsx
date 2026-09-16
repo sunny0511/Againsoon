@@ -16,7 +16,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.inkSoft,
         tabBarLabelStyle: {
           fontFamily: fonts.bodyMedium,
-          fontSize: 12,
+          fontSize: 11,
         },
         tabBarStyle: {
           backgroundColor: colors.card,
@@ -34,17 +34,31 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="history"
+        name="calendar"
         options={{
-          title: 'History',
-          tabBarIcon: ({ color, size }) => <Ionicons name="time-outline" size={size} color={color} />,
+          title: 'Plan',
+          tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="ideas"
+        options={{
+          title: 'Ideas',
+          tabBarIcon: ({ color, size }) => <Ionicons name="sparkles-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="together"
+        options={{
+          title: 'Us',
+          tabBarIcon: ({ color, size }) => <Ionicons name="heart-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
         name="you"
         options={{
-          title: 'You two',
-          tabBarIcon: ({ color, size }) => <Ionicons name="heart-outline" size={size} color={color} />,
+          title: 'You',
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
         }}
       />
     </Tabs>
