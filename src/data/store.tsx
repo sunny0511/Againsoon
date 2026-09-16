@@ -12,7 +12,16 @@ import {
 import { nowIso } from '@/src/lib/dates';
 import { applyPresetToCouple } from '@/src/lib/accents';
 import { createId, normalizeInviteCode } from '@/src/lib/id';
-import { clearState, loadState, saveState } from '@/src/data/persist';
+import {
+  authenticate,
+  createAccount,
+  deleteAccountRecord,
+  ensureSandboxAccount,
+  loadSession,
+  signOutSession,
+  type Session,
+} from '@/src/data/auth';
+import { clearState, loadState, migrateLegacyState, saveState } from '@/src/data/persist';
 import {
   createCoupleFromName,
   createDemoState,
@@ -433,9 +442,20 @@ function reducer(state: PersistedState, action: Action): PersistedState {
 
 type StoreValue = {
   hydrated: boolean;
+  account: Session | null;
   state: PersistedState;
   setDraftName: (name: string) => void;
-  startDemo: () => void;
+  signUp: (input: {
+    email: string;
+    name: string;
+    password: string;
+    confirm: string;
+    acceptedTerms: boolean;
+  }) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
+  startDemo: () => Promise<void>;
   createCouple: () => void;
   joinWithCode: (code: string) => void;
   namePartner: (name: string) => void;
@@ -475,24 +495,28 @@ const StoreContext = createContext<StoreValue | null>(null);
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, createEmptyState());
+  const [account, setAccount] = useState<Session | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     let active = true;
-    loadState().then((saved) => {
+    (async () => {
+      const session = await loadSession();
+      const saved = session ? await loadState(session.accountId) : null;
       if (!active) return;
+      setAccount(session);
       dispatch({ type: 'HYDRATE', payload: saved ?? createEmptyState() });
       setHydrated(true);
-    });
+    })();
     return () => {
       active = false;
     };
   }, []);
 
   useEffect(() => {
-    if (!hydrated) return;
-    saveState(state).catch(() => {});
-  }, [hydrated, state]);
+    if (!hydrated || !account) return;
+    saveState(state, account.accountId).catch(() => {});
+  }, [hydrated, account, state]);
 
   const propose = useCallback((input: ProposeInput) => {
     const id = createId('meet');
@@ -504,12 +528,70 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return id;
   }, []);
 
+  const signUp = useCallback(
+    async (input: {
+      email: string;
+      name: string;
+      password: string;
+      confirm: string;
+      acceptedTerms: boolean;
+    }) => {
+      const session = await createAccount(input);
+      await migrateLegacyState(session.accountId);
+      const saved = await loadState(session.accountId);
+      setAccount(session);
+      dispatch({
+        type: 'HYDRATE',
+        payload: {
+          ...(saved ?? createEmptyState()),
+          draftName: session.name,
+        },
+      });
+    },
+    [],
+  );
+
+  const signIn = useCallback(async (email: string, password: string) => {
+    const session = await authenticate(email, password);
+    const saved = await loadState(session.accountId);
+    setAccount(session);
+    dispatch({
+      type: 'HYDRATE',
+      payload: saved ?? { ...createEmptyState(), draftName: session.name },
+    });
+  }, []);
+
+  const signOut = useCallback(async () => {
+    await signOutSession();
+    setAccount(null);
+    dispatch({ type: 'HYDRATE', payload: createEmptyState() });
+  }, []);
+
+  const deleteAccount = useCallback(async () => {
+    if (!account) return;
+    await clearState(account.accountId);
+    await deleteAccountRecord(account.accountId);
+    setAccount(null);
+    dispatch({ type: 'HYDRATE', payload: createEmptyState() });
+  }, [account]);
+
+  const startDemo = useCallback(async () => {
+    const session = await ensureSandboxAccount();
+    setAccount(session);
+    dispatch({ type: 'START_DEMO' });
+  }, []);
+
   const value = useMemo<StoreValue>(
     () => ({
       hydrated,
+      account,
       state,
       setDraftName: (name) => dispatch({ type: 'SET_DRAFT_NAME', name }),
-      startDemo: () => dispatch({ type: 'START_DEMO' }),
+      signUp,
+      signIn,
+      signOut,
+      deleteAccount,
+      startDemo,
       createCouple: () => dispatch({ type: 'CREATE_COUPLE' }),
       joinWithCode: (code) => dispatch({ type: 'JOIN_WITH_CODE', code }),
       namePartner: (name) => dispatch({ type: 'NAME_PARTNER', name }),
@@ -540,11 +622,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       removeListItem: (id) => dispatch({ type: 'REMOVE_LIST_ITEM', id }),
       setWidgetEnabled: (enabled) => dispatch({ type: 'SET_WIDGET_ENABLED', enabled }),
       reset: () => {
-        clearState().catch(() => {});
+        clearState(account?.accountId).catch(() => {});
         dispatch({ type: 'RESET' });
+        if (account?.name) dispatch({ type: 'SET_DRAFT_NAME', name: account.name });
       },
     }),
-    [hydrated, propose, state],
+    [account, deleteAccount, hydrated, propose, signIn, signOut, signUp, startDemo, state],
   );
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;

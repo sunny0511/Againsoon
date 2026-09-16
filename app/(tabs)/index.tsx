@@ -40,7 +40,7 @@ import { colors, fonts, radii, spacing } from '@/src/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { hydrated, state, switchPartner } = useAppStore();
+  const { hydrated, account, state, switchPartner } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const accents = coupleAccents(state);
@@ -65,7 +65,9 @@ export default function HomeScreen() {
 
   return (
     <Screen>
-      <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      {account?.isSandbox ? (
+        <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      ) : null}
 
       <View style={styles.heroHeader}>
         <View style={{ flex: 1 }}>

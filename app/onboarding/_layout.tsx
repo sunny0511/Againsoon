@@ -5,10 +5,10 @@ import { useAppStore } from '@/src/data/store';
 import { colors } from '@/src/theme';
 
 export default function OnboardingLayout() {
-  const { hydrated, state } = useAppStore();
+  const { hydrated, account, state } = useAppStore();
 
   if (!hydrated) return <LoadingScreen />;
-  if (state.onboardingComplete && state.couple) {
+  if (account && state.onboardingComplete && state.couple) {
     return <Redirect href="/(tabs)" />;
   }
 

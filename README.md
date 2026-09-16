@@ -4,7 +4,7 @@ A warm, couple-first Expo app for proposing, negotiating, and locking in the nex
 
 Two people share one couple space. One partner suggests a time (and optionally a place). The other accepts, counters, or declines. When you both agree, the meet is confirmed. That loop is the product. Calendars, ideas, lists, and maps exist to make the next “yes” easier.
 
-This repository is a local MVP: the booking loop is fully usable on one device. Pairing and data live in AsyncStorage so a backend can be added later.
+This version is App Store–ready: create an account, pair, and use the booking loop. Couple data still lives on this device (ready for a later sync backend).
 
 ## Run it
 
@@ -27,8 +27,9 @@ Node 20+ is enough. No native Xcode/Android Studio build is required for the MVP
 
 Fastest path (Maya & Jordan):
 
-1. Open the app → **Get started** or **Try the demo couple**.
-2. On pairing, tap **Open demo couple**.
+1. Open the app → **Create account** (or **Explore sample couple**).
+2. For a real couple: email, password (8+), first name, accept Privacy & Terms → **Create couple** or join with a code.
+3. Fastest review path: **Explore sample couple** → **Open sample couple** (Maya & Jordan).
 3. **Home** shows:
    - a confirmed meet at the lantern steps (about 45 minutes out)
    - a date-goal card (`1 of 4` this month) with a gentle behind-pace nudge
@@ -54,7 +55,8 @@ To re-seed the demo after exploring, **Us → Start over**, then open the demo c
 
 ## What this version covers
 
-- Onboarding and couple pairing (invite code, share text, or local demo)
+- Onboarding: create account (email + password), sign in, delete account, Privacy & Terms
+- Couple pairing (invite code, share text, or sample couple for review)
 - Home: next meet, date goal + nudge, key-date countdown, date prep, groceries, chores, widget, pending proposals, memories
 - Dual availability calendar (mocked): day/week, me/them/us, privacy, tap a free slot to propose
 - Propose a meet: day, time of day, optional window, live place search, note — including prefills from calendar / wishlist / Assist
@@ -89,12 +91,16 @@ npx expo start
 
 If the cloud call fails (or the browser blocks the public endpoint), Assist falls back to the on-device wishlist/recipe scorer.
 
+## App Store
+
+iOS bundle id is `com.againsoon.app`. See **[docs/APP_STORE.md](docs/APP_STORE.md)** for EAS build, App Review notes, and the privacy URL. In-app policy: `/legal/privacy` and `/legal/terms` (also `docs/PRIVACY.md` / `docs/TERMS.md`).
+
 ## Project shape
 
 ```
 app/                 Expo Router screens (tabs: Home, Calendar, Ideas, History, Us)
 src/components/      UI primitives, calendar board, maps, lists, widget, memories
-src/data/            Local store, persistence (v3), selectors, seed demo
+src/data/            Auth (secure session), local store, persistence, seed
 src/lib/             Dates, availability, goals, Assist/LLM, places, ids
 src/theme.ts         Color, type, spacing, accent presets
 src/types.ts         Domain model
@@ -106,6 +112,7 @@ src/types.ts         Domain model
 
 - Expo SDK 57, Expo Router, TypeScript
 - React Native (iOS, Android, web)
-- Local persisted state (AsyncStorage)
+- Accounts in SecureStore (keychain); couple data in AsyncStorage per account
 - OpenStreetMap / Photon / Open-Meteo for live maps
 - Cloud LLM via OpenAI-compatible chat completions
+- EAS Build (`eas.json`) for App Store / Play

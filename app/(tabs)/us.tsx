@@ -38,6 +38,7 @@ export default function UsScreen() {
   const router = useRouter();
   const {
     state,
+    account,
     switchPartner,
     namePartner,
     reset,
@@ -48,6 +49,8 @@ export default function UsScreen() {
     addKeyDate,
     removeKeyDate,
     setWidgetEnabled,
+    signOut,
+    deleteAccount,
   } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
@@ -81,8 +84,34 @@ export default function UsScreen() {
     }
   }
 
+  function confirmDeleteAccount() {
+    const message = 'This permanently deletes your Againsoon account and couple data on this device.';
+    if (Platform.OS === 'web') {
+      const confirmed =
+        typeof window !== 'undefined' && window.confirm(`Delete account?\n\n${message}`);
+      if (confirmed) {
+        deleteAccount().then(() => router.replace('/onboarding'));
+      }
+      return;
+    }
+    Alert.alert('Delete account?', message, [
+      { text: 'Keep it', style: 'cancel' },
+      {
+        text: 'Delete account',
+        style: 'destructive',
+        onPress: () => {
+          deleteAccount().then(() => router.replace('/onboarding'));
+        },
+      },
+    ]);
+  }
+
+  function confirmSignOut() {
+    signOut().then(() => router.replace('/onboarding'));
+  }
+
   function confirmReset() {
-    const message = 'This clears the couple and meets saved on this device.';
+    const message = 'This clears the couple and meets saved on this device. Your account stays signed in.';
     if (Platform.OS === 'web') {
       const confirmed =
         typeof window !== 'undefined' && window.confirm(`Start over?\n\n${message}`);
@@ -109,7 +138,7 @@ export default function UsScreen() {
     <Screen>
       <Display size={32}>Us</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 24 }}>
-        Pairing, lists, the home widget, and the colours you two use. Still local to this device.
+        Pairing, your account, lists, and the colours you two use. Couple data stays on this device.
       </Body>
 
       <Card style={{ gap: spacing.md, alignItems: 'flex-start' }}>
@@ -122,6 +151,24 @@ export default function UsScreen() {
         </Body>
         <Button label={`Switch to ${them.name}`} variant="secondary" onPress={switchPartner} />
       </Card>
+
+      {account ? (
+        <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
+          <Display size={22}>Account</Display>
+          <Body>
+            {account.name} · {account.email}
+          </Body>
+          <Body muted small>
+            {account.isSandbox
+              ? 'Sample session for trying the booking loop. Create a real account from Welcome when you’re ready.'
+              : 'Signed in on this device. Delete account removes it from this phone (App Store requirement).'}
+          </Body>
+          <Button label="Privacy Policy" variant="ghost" onPress={() => router.push('/legal/privacy')} />
+          <Button label="Terms" variant="ghost" onPress={() => router.push('/legal/terms')} />
+          <Button label="Sign out" variant="secondary" onPress={confirmSignOut} />
+          <Button label="Delete account" variant="danger" onPress={confirmDeleteAccount} />
+        </Card>
+      ) : null}
 
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
         <Display size={22}>Date cadence</Display>
@@ -319,8 +366,8 @@ export default function UsScreen() {
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
         <Display size={22}>On this device</Display>
         <Body muted small>
-          Meets, ideas, lists, and calendars are saved in local storage. Real OAuth and multi-device sync stay out of
-          scope.
+          Meets, ideas, lists, and calendars are saved on this device for your account. Multi-device sync is a later
+          release.
         </Body>
         <Button label="Start over" variant="danger" onPress={confirmReset} />
       </Card>

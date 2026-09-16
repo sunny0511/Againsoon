@@ -24,7 +24,7 @@ import type { BudgetVibe, DateVibe, WishlistItem } from '@/src/types';
 
 export default function IdeasScreen() {
   const router = useRouter();
-  const { state, switchPartner, addWishlistItem, removeWishlistItem } = useAppStore();
+  const { account, state, switchPartner, addWishlistItem, removeWishlistItem } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const [tab, setTab] = useState<'wishlist' | 'assist'>('wishlist');
@@ -60,7 +60,9 @@ export default function IdeasScreen() {
 
   return (
     <Screen>
-      <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      {account?.isSandbox ? (
+        <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      ) : null}
       <Display size={32}>Date ideas</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 16 }}>
         A shared wishlist, plus Assist that asks a cloud model first and falls back on-device if the network is out.
