@@ -4,7 +4,7 @@ A warm, couple-first Expo app for proposing, negotiating, and locking in the nex
 
 Two people share one couple space. One partner suggests a time (and optionally a place). The other accepts, counters, or declines. When you both agree, the meet is confirmed. That loop is the product. Calendars, ideas, lists, and maps exist to make the next “yes” easier.
 
-This version is App Store–ready: create an account, pair, and use the booking loop. Couple data still lives on this device (ready for a later sync backend).
+This version is App Store and Play Store–ready: create an account, pair, and use the booking loop. Couple data still lives on this device (ready for a later sync backend).
 
 ## Run it
 
@@ -21,7 +21,7 @@ Then:
 
 On a phone, use Expo Go rather than a `localhost` link from another machine.
 
-Node 20+ is enough. No native Xcode/Android Studio build is required for the MVP.
+Node 20+ is enough to develop. Store binaries are built with EAS (`eas.json`): iOS IPA and Android AAB.
 
 ## Demo the competitive walkthrough
 
@@ -91,9 +91,23 @@ npx expo start
 
 If the cloud call fails (or the browser blocks the public endpoint), Assist falls back to the on-device wishlist/recipe scorer.
 
-## App Store
+## App Store and Play Store
 
-iOS bundle id is `com.againsoon.app`. See **[docs/APP_STORE.md](docs/APP_STORE.md)** for EAS build, App Review notes, and the privacy URL. In-app policy: `/legal/privacy` and `/legal/terms` (also `docs/PRIVACY.md` / `docs/TERMS.md`).
+Same identifier on both stores: `com.againsoon.app`.
+
+- iOS: **[docs/APP_STORE.md](docs/APP_STORE.md)** — EAS IPA, App Review notes, export compliance
+- Android: **[docs/PLAY_STORE.md](docs/PLAY_STORE.md)** — EAS AAB, Play Console, Data safety answers
+
+In-app policy: `/legal/privacy` and `/legal/terms` (also `docs/PRIVACY.md` / `docs/TERMS.md`).
+
+```bash
+npm run eas:build:ios
+npm run eas:build:android
+npm run eas:submit:ios
+npm run eas:submit:android
+```
+
+You still need Apple Developer and Google Play Console accounts, plus `eas login`. This repo cannot finish the store upload for you.
 
 ## Project shape
 
@@ -115,4 +129,4 @@ src/types.ts         Domain model
 - Accounts in SecureStore (keychain); couple data in AsyncStorage per account
 - OpenStreetMap / Photon / Open-Meteo for live maps
 - Cloud LLM via OpenAI-compatible chat completions
-- EAS Build (`eas.json`) for App Store / Play
+- EAS Build (`eas.json`) for App Store IPA and Play Store AAB

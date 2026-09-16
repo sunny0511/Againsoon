@@ -12,7 +12,7 @@ export default function PrivacyScreen() {
         Last updated 16 September 2026
       </Body>
       <Body style={{ marginBottom: 14 }}>
-        Againsoon stores your account and couple data on this device. We do not run a cloud account server in this version, and we do not sell your data or use ad-tracking SDKs.
+        Againsoon stores your account and couple data on this device. We do not run a cloud account server in this version, we do not sell your data, we do not use the advertising ID, and we do not include app data in Android backups.
       </Body>
       <Body style={{ marginBottom: 14 }}>
         Account: email, first name, and a hashed password in secure storage. Couple data: meets, mocked calendars, lists, memories, and optional photos you attach.

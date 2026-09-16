@@ -7,7 +7,7 @@ Againsoon is configured for a production App Store build. You still need an Appl
 - Sign in / sign out
 - In-app **Delete account** (App Store requirement)
 - Privacy Policy and Terms screens
-- iOS bundle id `com.againsoon.app`, Android package `com.againsoon.app`
+- iOS bundle id `com.againsoon.app`, Android application id `com.againsoon.app`
 - Export compliance flag `ITSAppUsesNonExemptEncryption = false`
 - Location and photo permission strings
 - EAS build + submit profiles in `eas.json`
@@ -63,9 +63,9 @@ Explore sample couple is enough. If you prefer a password login:
 - Native home-screen widget binary (the in-app `/widget` screen is pin-able on web)
 
 ## Play Store
-Same bundle/package. After iOS:
+See **[PLAY_STORE.md](./PLAY_STORE.md)** for Play Console, Data safety answers, AAB vs APK, and submit-as-draft.
 
 ```bash
-eas build --platform android --profile production
-eas submit --platform android --profile production
+npm run eas:build:android
+npm run eas:submit:android
 ```
