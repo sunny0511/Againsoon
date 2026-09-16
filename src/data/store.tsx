@@ -60,6 +60,10 @@ type Action =
   | { type: 'REMOVE_PREP'; id: string }
   | { type: 'TOGGLE_CALENDAR_PRIVACY'; calendarId: string }
   | { type: 'SET_ACCENT_PRESET'; presetId: AccentPresetId }
+  | { type: 'ADD_LIST_ITEM'; id: string; listId: string; title: string; aisle?: string }
+  | { type: 'TOGGLE_LIST_ITEM'; id: string }
+  | { type: 'REMOVE_LIST_ITEM'; id: string }
+  | { type: 'SET_WIDGET_ENABLED'; enabled: boolean }
   | { type: 'RESET' };
 
 function requireCurrent(state: PersistedState): string {
@@ -90,6 +94,9 @@ function withCoupleWorkspace(state: PersistedState, couple: PersistedState['coup
     keyDates: workspace.keyDates,
     memories: workspace.memories,
     datePrep: workspace.datePrep,
+    lists: workspace.lists,
+    listItems: workspace.listItems,
+    widgetEnabled: workspace.widgetEnabled,
     accentPresetId: workspace.accentPresetId,
   };
 }
@@ -167,6 +174,7 @@ function reducer(state: PersistedState, action: Action): PersistedState {
             startsAt: action.input.startsAt,
             endsAt: action.input.endsAt,
             location: trimOptional(action.input.location),
+            place: action.input.place,
             notes: trimOptional(action.input.notes),
             createdAt: nowIso(),
           },
@@ -220,6 +228,7 @@ function reducer(state: PersistedState, action: Action): PersistedState {
                 startsAt: action.input.startsAt,
                 endsAt: action.input.endsAt,
                 location: trimOptional(action.input.location),
+                place: action.input.place,
                 notes: trimOptional(action.input.notes),
                 createdAt: nowIso(),
               },
@@ -386,6 +395,35 @@ function reducer(state: PersistedState, action: Action): PersistedState {
         couple: applyPresetToCouple(state.couple, action.presetId),
       };
     }
+    case 'ADD_LIST_ITEM': {
+      const authorId = state.currentPartnerId ?? undefined;
+      return {
+        ...state,
+        listItems: [
+          {
+            id: action.id,
+            listId: action.listId,
+            title: action.title.trim(),
+            done: false,
+            aisle: trimOptional(action.aisle),
+            assigneeId: authorId,
+            createdAt: nowIso(),
+          },
+          ...state.listItems,
+        ],
+      };
+    }
+    case 'TOGGLE_LIST_ITEM':
+      return {
+        ...state,
+        listItems: state.listItems.map((item) =>
+          item.id === action.id ? { ...item, done: !item.done } : item,
+        ),
+      };
+    case 'REMOVE_LIST_ITEM':
+      return { ...state, listItems: state.listItems.filter((item) => item.id !== action.id) };
+    case 'SET_WIDGET_ENABLED':
+      return { ...state, widgetEnabled: action.enabled };
     case 'RESET':
       return createEmptyState();
     default:
@@ -426,6 +464,10 @@ type StoreValue = {
   removePrep: (id: string) => void;
   toggleCalendarPrivacy: (calendarId: string) => void;
   setAccentPreset: (presetId: AccentPresetId) => void;
+  addListItem: (input: { listId: string; title: string; aisle?: string }) => void;
+  toggleListItem: (id: string) => void;
+  removeListItem: (id: string) => void;
+  setWidgetEnabled: (enabled: boolean) => void;
   reset: () => void;
 };
 
@@ -493,6 +535,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       removePrep: (id) => dispatch({ type: 'REMOVE_PREP', id }),
       toggleCalendarPrivacy: (calendarId) => dispatch({ type: 'TOGGLE_CALENDAR_PRIVACY', calendarId }),
       setAccentPreset: (presetId) => dispatch({ type: 'SET_ACCENT_PRESET', presetId }),
+      addListItem: (input) => dispatch({ type: 'ADD_LIST_ITEM', id: createId('li'), ...input }),
+      toggleListItem: (id) => dispatch({ type: 'TOGGLE_LIST_ITEM', id }),
+      removeListItem: (id) => dispatch({ type: 'REMOVE_LIST_ITEM', id }),
+      setWidgetEnabled: (enabled) => dispatch({ type: 'SET_WIDGET_ENABLED', enabled }),
       reset: () => {
         clearState().catch(() => {});
         dispatch({ type: 'RESET' });

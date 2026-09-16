@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { Avatar, Body, Button, Card, Display, ToggleRow } from '@/src/components/ui';
-import { bothSharingLocation, currentPartner, isSharingLocation, otherPartner } from '@/src/data/selectors';
+import { bothSharingLocation, currentPartner, isSharingLocation, latestRevision, otherPartner } from '@/src/data/selectors';
 import { useAppStore } from '@/src/data/store';
-import { formatMeters, isLocationWindowOpen, msUntilLocationWindow, proximityForMeet, requestOwnLocation } from '@/src/lib/location';
+import { formatMeters, isLocationWindowOpen, msUntilLocationWindow, offsetCoords, proximityForMeet, proximityFromCoords, requestOwnLocation, type Coords } from '@/src/lib/location';
 import { colors, radii, spacing } from '@/src/theme';
 import type { Meet, Partner } from '@/src/types';
 
@@ -19,17 +19,29 @@ export function LocationSharingCard({
   const me = currentPartner(state);
   const them = otherPartner(state);
   const [live, setLive] = useState(false);
+  const [youCoords, setYouCoords] = useState<Coords | null>(null);
   const mineOn = isSharingLocation(state, state.currentPartnerId);
   const bothOn = bothSharingLocation(state);
   const windowOpen = isLocationWindowOpen(meet);
   const untilWindow = msUntilLocationWindow(meet);
-  const snapshot = useMemo(() => proximityForMeet(meet), [meet, live, mineOn, bothOn]);
+  const venue = latestRevision(meet).place;
+  const snapshot = useMemo(() => {
+    if (youCoords && venue) {
+      const venueCoords = { latitude: venue.lat, longitude: venue.lon };
+      const them = offsetCoords(venueCoords, 420, -180);
+      return proximityFromCoords(youCoords, them, venueCoords);
+    }
+    return proximityForMeet(meet);
+  }, [meet, youCoords, venue, live, mineOn, bothOn]);
 
   useEffect(() => {
     if (!mineOn || !windowOpen) return;
     let active = true;
     requestOwnLocation().then((coords) => {
-      if (active && coords) setLive(true);
+      if (active && coords) {
+        setYouCoords(coords);
+        setLive(true);
+      }
     });
     return () => {
       active = false;
@@ -39,7 +51,9 @@ export function LocationSharingCard({
   if (!me || !them) return null;
 
   async function enableSharing() {
-    setLive(Boolean(await requestOwnLocation()));
+    const coords = await requestOwnLocation();
+    if (coords) setYouCoords(coords);
+    setLive(Boolean(coords));
     setLocationSharing(true);
   }
 
@@ -60,7 +74,7 @@ export function LocationSharingCard({
         label={`Share my location as ${me.name}`}
         description={
           live
-            ? 'This phone’s GPS is on. The other pin is simulated on a one-device demo.'
+            ? 'This phone’s GPS is on. Distances use the live map pin for the meet; their pin is estimated on a one-device demo.'
             : 'We’ll ask for GPS when the window opens. Until then, distances are estimated.'
         }
         value={mineOn}

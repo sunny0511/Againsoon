@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { DatePrepList } from '@/src/components/DatePrepList';
+import { LiveMap } from '@/src/components/LiveMap';
 import { LocationSharingCard } from '@/src/components/LocationSharingCard';
 import { LockInMoment } from '@/src/components/LockInMoment';
 import { MemoryCard } from '@/src/components/MemoryCard';
@@ -114,6 +115,7 @@ export default function MeetDetailScreen() {
             <Row icon="map-outline" label="Place still open" muted />
           )}
           {revision.notes ? <Row icon="chatbubble-ellipses-outline" label={revision.notes} /> : null}
+          {revision.place ? <LiveMap place={revision.place} /> : null}
         </Card>
 
         {meet.status === 'confirmed' && !past ? (

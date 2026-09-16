@@ -3,6 +3,8 @@ import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
+import { NextMeetWidget } from '@/src/components/NextMeetWidget';
+import { SharedListCard } from '@/src/components/SharedListCard';
 import {
   AvatarStack,
   Body,
@@ -45,6 +47,7 @@ export default function UsScreen() {
     toggleCalendarPrivacy,
     addKeyDate,
     removeKeyDate,
+    setWidgetEnabled,
   } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
@@ -106,7 +109,7 @@ export default function UsScreen() {
     <Screen>
       <Display size={32}>Us</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 24 }}>
-        Pairing, cadence, key dates, and the colours you two use. Still local to this device.
+        Pairing, lists, the home widget, and the colours you two use. Still local to this device.
       </Body>
 
       <Card style={{ gap: spacing.md, alignItems: 'flex-start' }}>
@@ -192,10 +195,31 @@ export default function UsScreen() {
         />
       </Card>
 
+      {state.lists.map((list) => (
+        <Card key={list.id} style={{ gap: spacing.md, marginTop: spacing.md }}>
+          <SharedListCard list={list} />
+        </Card>
+      ))}
+
+      <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
+        <Display size={22}>Home widget</Display>
+        <Body muted small>
+          A live next-meet card you can pin. On the web, open it and use Add to Home Screen. Native home-screen widgets can read this same payload.
+        </Body>
+        <ToggleRow
+          label="Show widget on Home"
+          description="The compact next-meet card, grocery count, and pending proposals."
+          value={state.widgetEnabled}
+          onValueChange={setWidgetEnabled}
+        />
+        {state.widgetEnabled ? <NextMeetWidget state={state} onPress={() => router.push('/widget')} /> : null}
+        <Button label="Open widget" variant="secondary" onPress={() => router.push('/widget')} />
+      </Card>
+
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
         <Display size={22}>Upcoming reminders</Display>
         <Body muted small>
-          Local stubs — no push notifications yet. You’ll see them here as the date approaches.
+          These fire on the widget and this list as the date approaches. Push notifications are still a later backend.
         </Body>
         {reminders.length === 0 ? (
           <Body muted small>
@@ -295,7 +319,7 @@ export default function UsScreen() {
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
         <Display size={22}>On this device</Display>
         <Body muted small>
-          Meets, ideas, and calendars are saved in local storage. Real OAuth, push, and multi-device sync stay out of
+          Meets, ideas, lists, and calendars are saved in local storage. Real OAuth and multi-device sync stay out of
           scope.
         </Body>
         <Button label="Start over" variant="danger" onPress={confirmReset} />

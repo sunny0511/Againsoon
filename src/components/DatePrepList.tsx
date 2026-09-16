@@ -16,7 +16,7 @@ export function DatePrepList({ meetId }: { meetId: string }) {
     <View style={{ gap: 10 }}>
       {items.length === 0 ? (
         <Body muted small>
-          A tiny list for this date — who books, what to bring. Not the household chores.
+          A tiny list for this date — who books, what to bring.
         </Body>
       ) : (
         items.map((item) => {

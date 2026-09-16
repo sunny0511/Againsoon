@@ -38,6 +38,9 @@ export function normalizeState(parsed: Omit<Partial<PersistedState>, 'version'> 
     keyDates: parsed.keyDates ?? workspace.keyDates,
     memories: parsed.memories ?? workspace.memories,
     datePrep: parsed.datePrep ?? workspace.datePrep,
+    lists: parsed.lists ?? workspace.lists,
+    listItems: parsed.listItems ?? workspace.listItems,
+    widgetEnabled: parsed.widgetEnabled ?? true,
     accentPresetId: accent && PRESETS.includes(accent) ? accent : 'terracotta-sage',
   };
 }
