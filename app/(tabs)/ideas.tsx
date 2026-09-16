@@ -2,7 +2,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { DemoSwitcher } from '@/src/components/DemoSwitcher';
+import { SessionBanner } from '@/src/components/SessionBanner';
 import {
   Body,
   Button,
@@ -11,20 +11,21 @@ import {
   Display,
   EmptyState,
   Label,
+  LoadingScreen,
   Pill,
   Screen,
   Segmented,
   TextField,
 } from '@/src/components/ui';
 import { currentPartner, otherPartner, partnerById } from '@/src/data/selectors';
-import { useAppStore } from '@/src/data/store';
+import { isCloudCoupleReady, useAppStore } from '@/src/data/store';
 import { BUDGET_COPY, suggestDates, VIBE_COPY } from '@/src/lib/assist';
 import { colors, fonts, radii, spacing } from '@/src/theme';
 import type { BudgetVibe, DateVibe, WishlistItem } from '@/src/types';
 
 export default function IdeasScreen() {
   const router = useRouter();
-  const { state, switchPartner, addWishlistItem, removeWishlistItem } = useAppStore();
+  const { state, session, addWishlistItem, removeWishlistItem } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const [tab, setTab] = useState<'wishlist' | 'assist'>('wishlist');
@@ -37,6 +38,7 @@ export default function IdeasScreen() {
   const [windowLabel, setWindowLabel] = useState<'weeknight' | 'weekend'>('weeknight');
   const [suggestions, setSuggestions] = useState<ReturnType<typeof suggestDates> | null>(null);
 
+  if (session.kind === 'paired' && !isCloudCoupleReady(session, state)) return <LoadingScreen />;
   if (!state.couple || !me || !them) {
     return <Redirect href="/onboarding" />;
   }
@@ -58,7 +60,7 @@ export default function IdeasScreen() {
 
   return (
     <Screen>
-      <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      <SessionBanner />
       <Display size={32}>Date ideas</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 16 }}>
         A shared wishlist, plus a tiny on-device Assist that never leaves this phone.

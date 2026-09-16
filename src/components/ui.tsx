@@ -130,6 +130,7 @@ export function Button({
   variant = 'primary',
   icon,
   disabled,
+  loading,
   style,
 }: {
   label: string;
@@ -137,6 +138,7 @@ export function Button({
   variant?: 'primary' | 'secondary' | 'ghost' | 'sage' | 'danger' | 'gold';
   icon?: keyof typeof Ionicons.glyphMap;
   disabled?: boolean;
+  loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const palette = {
@@ -147,22 +149,51 @@ export function Button({
     danger: { bg: colors.dangerSoft, fg: colors.danger },
     gold: { bg: colors.gold, fg: colors.onAccent },
   }[variant];
+  const isDisabled = disabled || loading;
 
   return (
     <Pressable
-      disabled={disabled}
+      disabled={isDisabled}
       onPress={onPress}
       style={({ pressed }) => [
         styles.button,
         { backgroundColor: palette.bg },
         variant === 'ghost' && styles.ghostButton,
-        disabled && { opacity: 0.45 },
-        pressed && !disabled && styles.pressed,
+        isDisabled && { opacity: 0.45 },
+        pressed && !isDisabled && styles.pressed,
         style,
       ]}>
-      {icon ? <Ionicons name={icon} size={18} color={palette.fg} /> : null}
+      {loading ? (
+        <ActivityIndicator color={palette.fg} />
+      ) : icon ? (
+        <Ionicons name={icon} size={18} color={palette.fg} />
+      ) : null}
       <Text style={[styles.buttonLabel, { color: palette.fg }]}>{label}</Text>
     </Pressable>
+  );
+}
+
+export function ErrorBanner({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry?: () => void;
+}) {
+  return (
+    <View style={styles.errorBanner}>
+      <View style={{ flex: 1, gap: 4 }}>
+        <Text style={styles.errorTitle}>Couldn’t sync</Text>
+        <Body small style={{ color: colors.danger }}>
+          {message}
+        </Body>
+      </View>
+      {onRetry ? (
+        <Pressable onPress={onRetry} hitSlop={8}>
+          <Text style={styles.errorRetry}>Retry</Text>
+        </Pressable>
+      ) : null}
+    </View>
   );
 }
 
@@ -713,5 +744,27 @@ const styles = StyleSheet.create({
   segmentLabelActive: {
     color: colors.ink,
     fontFamily: fonts.bodySemi,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.danger,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  errorTitle: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 13,
+    color: colors.danger,
+  },
+  errorRetry: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 13,
+    color: colors.accentDeep,
   },
 });

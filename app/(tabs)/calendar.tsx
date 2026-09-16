@@ -2,27 +2,28 @@ import { Redirect, useRouter } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { AvailabilityBoard } from '@/src/components/AvailabilityBoard';
-import { DemoSwitcher } from '@/src/components/DemoSwitcher';
-import { Body, Button, Card, Display, Label, Screen } from '@/src/components/ui';
+import { SessionBanner } from '@/src/components/SessionBanner';
+import { Body, Button, Card, Display, Label, LoadingScreen, Screen } from '@/src/components/ui';
 import { coupleAccents, currentPartner, otherPartner } from '@/src/data/selectors';
-import { useAppStore } from '@/src/data/store';
+import { isCloudCoupleReady, useAppStore } from '@/src/data/store';
 import { providerLabel } from '@/src/lib/calendar';
 import { colors, spacing } from '@/src/theme';
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const { state, switchPartner } = useAppStore();
+  const { state, session } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const accents = coupleAccents(state);
 
+  if (session.kind === 'paired' && !isCloudCoupleReady(session, state)) return <LoadingScreen />;
   if (!state.couple || !me || !them || !state.currentPartnerId) {
     return <Redirect href="/onboarding" />;
   }
 
   return (
     <Screen>
-      <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      <SessionBanner />
       <Display size={32}>Both of you</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 18 }}>
         Sample calendars, plus locked-in meets and open proposals. Tap a mutual free slot to propose.

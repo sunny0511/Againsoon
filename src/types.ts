@@ -3,13 +3,34 @@ export type Partner = {
   name: string;
   hue: string;
   isPlaceholder?: boolean;
+  uid?: string;
 };
 
 export type Couple = {
   id: string;
   inviteCode: string;
+  inviteCodeExpiresAt?: string;
   partners: [Partner, Partner];
   usHue: string;
+  memberUids?: string[];
+};
+
+export type AuthUser = {
+  uid: string;
+  email: string | null;
+  displayName: string | null;
+};
+
+export type SessionKind = 'boot' | 'demo' | 'local' | 'signedOut' | 'unpaired' | 'paired';
+
+export type Session = {
+  kind: SessionKind;
+  firebaseConfigured: boolean;
+  authReady: boolean;
+  user: AuthUser | null;
+  coupleId: string | null;
+  syncError: string | null;
+  syncing: boolean;
 };
 
 export type MeetStatus = 'pending' | 'confirmed' | 'declined';

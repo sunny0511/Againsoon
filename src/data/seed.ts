@@ -1,6 +1,7 @@
 import { addDays, addHours, addMinutes, nowIso, setTime } from '@/src/lib/dates';
 import { applyPresetToCouple } from '@/src/lib/accents';
 import { createId, createInviteCode } from '@/src/lib/id';
+import { inviteExpiresAt } from '@/src/lib/invite';
 import { colors } from '@/src/theme';
 import type {
   BusyPattern,
@@ -429,11 +430,15 @@ export function createDemoState(now = new Date()): PersistedState {
   };
 }
 
-export function createCoupleFromName(name: string): { couple: Couple; currentPartnerId: string } {
+export function createCoupleFromName(
+  name: string,
+  uid?: string,
+): { couple: Couple; currentPartnerId: string } {
   const you: Couple['partners'][0] = {
     id: createId('p'),
     name: name.trim() || 'You',
     hue: colors.accent,
+    uid,
   };
   const them: Couple['partners'][1] = {
     id: createId('p'),
@@ -441,6 +446,7 @@ export function createCoupleFromName(name: string): { couple: Couple; currentPar
     hue: colors.sage,
     isPlaceholder: true,
   };
+  const expiry = inviteExpiresAt();
 
   return {
     currentPartnerId: you.id,
@@ -448,12 +454,18 @@ export function createCoupleFromName(name: string): { couple: Couple; currentPar
       {
         id: createId('couple'),
         inviteCode: createInviteCode(),
+        inviteCodeExpiresAt: expiry.iso,
+        memberUids: uid ? [uid] : [],
         usHue: colors.gold,
         partners: [you, them],
       },
       'terracotta-sage',
     ),
   };
+}
+
+export function isDemoCouple(couple: Couple | null | undefined): boolean {
+  return couple?.id === 'couple_demo' || couple?.inviteCode === DEMO_INVITE_CODE;
 }
 
 export function defaultPrepForMeet(meetId: string): DatePrepItem[] {

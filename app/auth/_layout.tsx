@@ -1,9 +1,10 @@
-import { Redirect } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
 
 import { LoadingScreen } from '@/src/components/ui';
 import { useAppStore } from '@/src/data/store';
+import { colors } from '@/src/theme';
 
-export default function Index() {
+export default function AuthLayout() {
   const { hydrated, state, session } = useAppStore();
 
   if (!hydrated || session.kind === 'boot') return <LoadingScreen />;
@@ -13,5 +14,13 @@ export default function Index() {
   if (session.kind === 'unpaired') {
     return <Redirect href="/onboarding/pair" />;
   }
-  return <Redirect href="/onboarding" />;
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: colors.canvas },
+      }}
+    />
+  );
 }

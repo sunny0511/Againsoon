@@ -1,8 +1,9 @@
 import * as Clipboard from 'expo-clipboard';
 import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
+import { SessionBanner } from '@/src/components/SessionBanner';
 import {
   AvatarStack,
   Body,
@@ -11,12 +12,14 @@ import {
   Chip,
   Display,
   Label,
+  LoadingScreen,
   Screen,
   TextField,
   ToggleRow,
 } from '@/src/components/ui';
 import { currentPartner, isSharingLocation, otherPartner, upcomingKeyDates, upcomingReminders } from '@/src/data/selectors';
-import { useAppStore } from '@/src/data/store';
+import { canSwitchPartner, isCloudCoupleReady, useAppStore } from '@/src/data/store';
+import { confirmAction } from '@/src/lib/confirm';
 import { formatInviteCode } from '@/src/lib/id';
 import { requestOwnLocation } from '@/src/lib/location';
 import { cadenceLabel } from '@/src/lib/goals';
@@ -36,9 +39,13 @@ export default function UsScreen() {
   const router = useRouter();
   const {
     state,
+    session,
     switchPartner,
     namePartner,
     reset,
+    leaveCouple,
+    rotateInviteCode,
+    signOutUser,
     setLocationSharing,
     setDateGoal,
     setAccentPreset,
@@ -53,7 +60,10 @@ export default function UsScreen() {
   const [keyTitle, setKeyTitle] = useState('');
   const [keyKind, setKeyKind] = useState<KeyDateKind>('anniversary');
   const [keyOffset, setKeyOffset] = useState('30');
+  const [busy, setBusy] = useState<'leave' | 'rotate' | 'out' | null>(null);
+  const [accountError, setAccountError] = useState('');
 
+  if (session.kind === 'paired' && !isCloudCoupleReady(session, state)) return <LoadingScreen />;
   if (!state.couple || !me || !them) {
     return <Redirect href="/onboarding" />;
   }
@@ -79,34 +89,72 @@ export default function UsScreen() {
   }
 
   function confirmReset() {
-    const message = 'This clears the couple and meets saved on this device.';
-    if (Platform.OS === 'web') {
-      const confirmed =
-        typeof window !== 'undefined' && window.confirm(`Start over?\n\n${message}`);
+    void (async () => {
+      const confirmed = await confirmAction(
+        'Start over?',
+        'This clears the couple and meets saved on this device.',
+        'Start over',
+      );
       if (confirmed) {
         reset();
         router.replace('/onboarding');
       }
+    })();
+  }
+
+  async function confirmLeave() {
+    const confirmed = await confirmAction(
+      'Leave this couple?',
+      'You’ll unpair from this space. Their data stays. You can join again with a fresh invite.',
+      'Leave couple',
+    );
+    if (!confirmed) return;
+    setBusy('leave');
+    setAccountError('');
+    const result = await leaveCouple();
+    setBusy(null);
+    if (result.error) {
+      setAccountError(result.error);
       return;
     }
-    Alert.alert('Start over?', message, [
-      { text: 'Keep it', style: 'cancel' },
-      {
-        text: 'Start over',
-        style: 'destructive',
-        onPress: () => {
-          reset();
-          router.replace('/onboarding');
-        },
-      },
-    ]);
+    router.replace('/onboarding/pair');
+  }
+
+  async function confirmSignOut() {
+    const confirmed = await confirmAction(
+      'Sign out?',
+      'You’ll need your email to get back into this couple.',
+      'Sign out',
+    );
+    if (!confirmed) return;
+    setBusy('out');
+    const result = await signOutUser();
+    setBusy(null);
+    if (result.error) {
+      setAccountError(result.error);
+      return;
+    }
+    router.replace('/onboarding');
+  }
+
+  async function rotateCode() {
+    setBusy('rotate');
+    setAccountError('');
+    const result = await rotateInviteCode();
+    setBusy(null);
+    if (result.error) setAccountError(result.error);
   }
 
   return (
     <Screen>
+      <SessionBanner />
       <Display size={32}>Us</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 24 }}>
-        Pairing, cadence, key dates, and the colours you two use. Still local to this device.
+        {session.kind === 'paired'
+          ? 'Pairing, cadence, key dates, and the colours you two use — live on both phones.'
+          : session.kind === 'demo'
+            ? 'Offline demo. Pairing, cadence, and colours stay on this device.'
+            : 'Pairing, cadence, key dates, and the colours you two use.'}
       </Body>
 
       <Card style={{ gap: spacing.md, alignItems: 'flex-start' }}>
@@ -114,10 +162,18 @@ export default function UsScreen() {
         <Display size={24}>
           {me.name} & {them.name}
         </Display>
-        <Body muted small>
-          You’re viewing as {me.name}. Switch to see proposals, privacy, and calendars from the other side.
-        </Body>
-        <Button label={`Switch to ${them.name}`} variant="secondary" onPress={switchPartner} />
+        {canSwitchPartner(session) ? (
+          <>
+            <Body muted small>
+              You’re viewing as {me.name}. Switch to see proposals, privacy, and calendars from the other side.
+            </Body>
+            <Button label={`Switch to ${them.name}`} variant="secondary" onPress={switchPartner} />
+          </>
+        ) : (
+          <Body muted small>
+            You’re {me.name}. {them.isPlaceholder ? 'Waiting for your person to join with the invite code.' : `${them.name} is on the other phone.`}
+          </Body>
+        )}
       </Card>
 
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
@@ -278,10 +334,15 @@ export default function UsScreen() {
         <Label>Invite code</Label>
         <Display size={30}>{code}</Display>
         <Body muted small>
-          Share this with your person, or type DEMO on a fresh install to open the sample couple.
+          {session.kind === 'paired'
+            ? `Share this with your person. It expires ${state.couple.inviteCodeExpiresAt ? formatShortDate(state.couple.inviteCodeExpiresAt) : 'in 7 days'} unless you rotate it.`
+            : 'Share this on this device, or type DEMO on a fresh install to open the sample couple.'}
         </Body>
         <Button label={copied ? 'Copied' : 'Copy code'} variant="ghost" onPress={copyCode} />
         <Button label="Share invite" variant="ghost" onPress={shareCode} />
+        {session.kind === 'paired' ? (
+          <Button label="Rotate code" variant="ghost" loading={busy === 'rotate'} onPress={rotateCode} />
+        ) : null}
       </Card>
 
       {them.isPlaceholder ? (
@@ -293,12 +354,31 @@ export default function UsScreen() {
       ) : null}
 
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
-        <Display size={22}>On this device</Display>
-        <Body muted small>
-          Meets, ideas, and calendars are saved in local storage. Real OAuth, push, and multi-device sync stay out of
-          scope.
-        </Body>
-        <Button label="Start over" variant="danger" onPress={confirmReset} />
+        <Display size={22}>{session.kind === 'paired' ? 'Account' : 'On this device'}</Display>
+        {accountError ? (
+          <Body small style={{ color: colors.danger }}>
+            {accountError}
+          </Body>
+        ) : (
+          <Body muted small>
+            {session.kind === 'paired'
+              ? `Signed in as ${session.user?.email ?? 'you'}. Leave unpairs you; their space stays. Sign out keeps the couple for next time.`
+              : session.kind === 'demo'
+                ? 'This is the Maya & Jordan offline demo. Start over to leave it.'
+                : 'Meets, ideas, and calendars are saved on this phone until you sign in.'}
+          </Body>
+        )}
+        {session.kind === 'paired' ? (
+          <>
+            <Button label="Leave couple" variant="danger" loading={busy === 'leave'} onPress={confirmLeave} />
+            <Button label="Sign out" variant="ghost" loading={busy === 'out'} onPress={confirmSignOut} />
+          </>
+        ) : (
+          <Button label="Start over" variant="danger" onPress={confirmReset} />
+        )}
+        {session.kind === 'demo' && session.user ? (
+          <Button label="Sign out of email too" variant="ghost" loading={busy === 'out'} onPress={confirmSignOut} />
+        ) : null}
       </Card>
       <View style={{ height: 12 }} />
     </Screen>

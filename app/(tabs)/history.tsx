@@ -1,20 +1,22 @@
 import { Redirect, useRouter } from 'expo-router';
 import { View } from 'react-native';
 
+import { SessionBanner } from '@/src/components/SessionBanner';
 import { MeetCard } from '@/src/components/MeetCard';
 import { MemoryCard } from '@/src/components/MemoryCard';
-import { Body, Display, EmptyState, Screen, SectionHeader } from '@/src/components/ui';
+import { Body, Display, EmptyState, LoadingScreen, Screen, SectionHeader } from '@/src/components/ui';
 import { currentPartner, historyMeets, latestRevision, sortedMemories } from '@/src/data/selectors';
-import { useAppStore } from '@/src/data/store';
+import { isCloudCoupleReady, useAppStore } from '@/src/data/store';
 import { spacing } from '@/src/theme';
 
 export default function HistoryScreen() {
   const router = useRouter();
-  const { state } = useAppStore();
+  const { state, session } = useAppStore();
   const me = currentPartner(state);
   const history = historyMeets(state.meets);
   const memories = sortedMemories(state.memories);
 
+  if (session.kind === 'paired' && !isCloudCoupleReady(session, state)) return <LoadingScreen />;
   if (!state.couple || !me || !state.currentPartnerId) {
     return <Redirect href="/onboarding" />;
   }
@@ -24,6 +26,7 @@ export default function HistoryScreen() {
 
   return (
     <Screen>
+      <SessionBanner />
       <Display size={32}>Shared history</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 24 }}>
         Dates that happened, memories you kept, and the ones that didn’t land.
