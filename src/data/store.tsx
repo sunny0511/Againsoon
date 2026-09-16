@@ -21,7 +21,7 @@ import {
   signOutSession,
   type Session,
 } from '@/src/data/auth';
-import { clearState, loadState, migrateLegacyState, saveState } from '@/src/data/persist';
+import { clearState, isSampleCoupleState, loadState, migrateLegacyState, saveState } from '@/src/data/persist';
 import {
   createCoupleFromName,
   createDemoState,
@@ -502,6 +502,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     let active = true;
     (async () => {
       const session = await loadSession();
+      if (session && !session.isSandbox) {
+        await migrateLegacyState(session.accountId);
+      }
       const saved = session ? await loadState(session.accountId) : null;
       if (!active) return;
       setAccount(session);
@@ -539,11 +542,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       const session = await createAccount(input);
       await migrateLegacyState(session.accountId);
       const saved = await loadState(session.accountId);
+      const next = saved && !isSampleCoupleState(saved) ? saved : createEmptyState();
       setAccount(session);
       dispatch({
         type: 'HYDRATE',
         payload: {
-          ...(saved ?? createEmptyState()),
+          ...next,
           draftName: session.name,
         },
       });
@@ -553,6 +557,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(async (email: string, password: string) => {
     const session = await authenticate(email, password);
+    if (!session.isSandbox) {
+      await migrateLegacyState(session.accountId);
+    }
     const saved = await loadState(session.accountId);
     setAccount(session);
     dispatch({

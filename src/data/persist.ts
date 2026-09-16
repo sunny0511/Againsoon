@@ -14,6 +14,13 @@ export function stateKey(accountId?: string | null): string {
   return accountId ? `${STORAGE_KEY}.${accountId}` : STORAGE_KEY;
 }
 
+export function isSampleCoupleState(state: PersistedState | null | undefined): boolean {
+  if (!state?.couple) return false;
+  if (state.couple.id === 'couple_demo') return true;
+  const ids = state.couple.partners.map((partner) => partner.id);
+  return ids.includes('p_maya') && ids.includes('p_jordan');
+}
+
 export function normalizeState(parsed: Omit<Partial<PersistedState>, 'version'> & { version?: number }): PersistedState {
   const empty = createEmptyState();
   const couple = parsed.couple
@@ -63,11 +70,10 @@ export async function loadState(accountId?: string | null): Promise<PersistedSta
   try {
     if (accountId) {
       const namespaced = await AsyncStorage.getItem(stateKey(accountId));
-      if (namespaced) return parseRaw(namespaced);
+      return namespaced ? parseRaw(namespaced) : null;
     }
     const raw = (await AsyncStorage.getItem(STORAGE_KEY)) ?? (await AsyncStorage.getItem(LEGACY_STORAGE_KEY));
-    if (!raw) return null;
-    return parseRaw(raw);
+    return raw ? parseRaw(raw) : null;
   } catch {
     return null;
   }
@@ -86,7 +92,13 @@ export async function clearState(accountId?: string | null): Promise<void> {
 export async function migrateLegacyState(accountId: string): Promise<void> {
   const existing = await AsyncStorage.getItem(stateKey(accountId));
   if (existing) return;
-  const legacy = (await AsyncStorage.getItem(STORAGE_KEY)) ?? (await AsyncStorage.getItem(LEGACY_STORAGE_KEY));
-  if (!legacy) return;
-  await AsyncStorage.setItem(stateKey(accountId), legacy);
+  const legacyRaw =
+    (await AsyncStorage.getItem(STORAGE_KEY)) ?? (await AsyncStorage.getItem(LEGACY_STORAGE_KEY));
+  if (!legacyRaw) return;
+  const legacy = parseRaw(legacyRaw);
+  // Pre-account installs keep a real couple. Sample/empty leftovers must not become a new account's home.
+  if (legacy?.couple && !isSampleCoupleState(legacy)) {
+    await AsyncStorage.setItem(stateKey(accountId), JSON.stringify(legacy));
+  }
+  await AsyncStorage.multiRemove([STORAGE_KEY, LEGACY_STORAGE_KEY]);
 }
