@@ -177,7 +177,7 @@ Do **not** check “ephemeral” unless you are sure the third-party APIs discar
 | Photos / media (image picker) | Optional photo on a memory of a past date. |
 | `INTERNET` | Place search, map tiles, Assist. |
 
-Not requested: background location, advertising ID, contacts, SMS, camera (unless the system photo picker surfaces it), microphone.
+Not requested: background location, advertising ID, contacts, SMS, camera, microphone. Memories use the photo library picker only.
 
 ## What this first store version does not include
 - Multi-device / cloud sync (each phone has its own local couple)
