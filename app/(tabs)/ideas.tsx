@@ -140,7 +140,7 @@ export default function IdeasScreen() {
           <Card style={{ gap: 8, backgroundColor: colors.goldSoft, borderColor: colors.gold }}>
             <Pill label={assist?.via === 'on-device' ? 'On-device fallback' : 'Cloud Assist'} tone="gold" />
             <Body small>
-              Assist calls a cloud LLM (Pollinations by default, or your own OpenAI-compatible key) and scores against your wishlist. If the cloud is unreachable, it uses the on-device recipe book.
+              Assist calls a cloud LLM first (Pollinations by default, or your own OpenAI-compatible key). If the browser blocks that endpoint, it uses the on-device recipe book so you can still propose in one tap.
             </Body>
           </Card>
           <Label>Vibe</Label>
@@ -205,7 +205,7 @@ export default function IdeasScreen() {
               <Body muted small>
                 {assist.via === 'cloud'
                   ? `From the cloud${assist.model ? ` · ${assist.model}` : ''}`
-                  : 'Cloud unreachable — these are on-device scores of your wishlist and recipe book.'}
+                  : 'Cloud Assist didn’t return ideas this time — these are on-device scores of your wishlist and recipe book.'}
               </Body>
               {assist.suggestions.map((item) => (
                 <Card key={item.id} style={{ gap: 8 }}>

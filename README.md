@@ -87,7 +87,7 @@ EXPO_PUBLIC_LLM_MODEL=gpt-4.1-mini
 npx expo start
 ```
 
-If the cloud call fails, Assist falls back to the on-device wishlist/recipe scorer.
+If the cloud call fails (or the browser blocks the public endpoint), Assist falls back to the on-device wishlist/recipe scorer.
 
 ## Project shape
 
