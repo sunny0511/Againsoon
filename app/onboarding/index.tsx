@@ -10,7 +10,7 @@ export default function WelcomeScreen() {
       <WarmMark />
       <Display>Againsoon</Display>
       <Body muted style={{ marginTop: 10, marginBottom: 28 }}>
-        A quiet place for two people to propose a time, talk it through, and lock in the next time you’ll be together.
+        The couples app for proposing a time, talking it through, and locking in the next date — with a shared calendar that actually knows you’re both free.
       </Body>
       <Button label="Get started" onPress={() => router.push('/onboarding/name')} />
       <Button

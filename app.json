@@ -12,7 +12,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#17121C",
+        "backgroundColor": "#161018",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -31,13 +31,19 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#17121C"
+          "backgroundColor": "#161018"
         }
       ],
       [
         "expo-location",
         {
           "locationWhenInUsePermission": "Againsoon can share how far you are in the hour before a confirmed meet, so you and your person can see the distance between you."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Againsoon can attach a photo to a memory of a date you shared."
         }
       ]
     ],

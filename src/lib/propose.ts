@@ -10,3 +10,8 @@ export function defaultProposeInput(from?: ProposeInput | null): ProposeInput {
   }
   return { startsAt: dinner.toISOString() };
 }
+
+export function firstParam(value?: string | string[]): string | undefined {
+  if (!value) return undefined;
+  return Array.isArray(value) ? value[0] : value;
+}

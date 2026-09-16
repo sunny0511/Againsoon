@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { Body, Label } from '@/src/components/ui';
-import { formatWeekday, sameDay, setTime, startOfDay, upcomingDays } from '@/src/lib/dates';
+import { formatTimeRange, formatWeekday, sameDay, setTime, startOfDay, upcomingDays } from '@/src/lib/dates';
 import { colors, fonts, radii, spacing } from '@/src/theme';
 import type { ProposeInput } from '@/src/types';
 
@@ -22,6 +22,12 @@ const WINDOWS = [
   { label: 'Evening', hours: 3 },
 ] as const;
 
+function matchingSlotIndex(startsAt?: string): number {
+  if (!startsAt) return 4;
+  const date = new Date(startsAt);
+  return SLOTS.findIndex((slot) => slot.hours === date.getHours() && slot.minutes === date.getMinutes());
+}
+
 export function WhenPicker({
   value,
   onChange,
@@ -29,25 +35,42 @@ export function WhenPicker({
   value: ProposeInput | null;
   onChange: (value: ProposeInput) => void;
 }) {
+  const initialCustom = matchingSlotIndex(value?.startsAt) < 0 && Boolean(value?.startsAt);
   const [day, setDay] = useState(() => startOfDay(value?.startsAt ? new Date(value.startsAt) : new Date()));
   const [slotIndex, setSlotIndex] = useState(() => {
-    if (!value?.startsAt) return 4;
-    const date = new Date(value.startsAt);
-    const found = SLOTS.findIndex((slot) => slot.hours === date.getHours() && slot.minutes === date.getMinutes());
+    const found = matchingSlotIndex(value?.startsAt);
     return found >= 0 ? found : 4;
   });
+  const [useCustom, setUseCustom] = useState(initialCustom);
   const [windowHours, setWindowHours] = useState(() => {
-    if (!value?.startsAt || !value.endsAt) return 0;
+    if (!value?.startsAt || !value.endsAt) return initialCustom ? 0 : 0;
     const diff = (new Date(value.endsAt).getTime() - new Date(value.startsAt).getTime()) / 3600000;
+    if (initialCustom) return 0;
     if (diff >= 2.5) return 3;
     if (diff >= 1.5) return 2;
     if (diff >= 0.5) return 1;
     return 0;
   });
 
+  const customStart = value?.startsAt ? new Date(value.startsAt) : null;
   const days = useMemo(() => upcomingDays(16), []);
 
-  function emit(nextDay = day, nextSlot = slotIndex, nextWindow = windowHours) {
+  function emit(nextDay = day, nextSlot = slotIndex, nextWindow = windowHours, custom = useCustom) {
+    if (custom && value?.startsAt) {
+      const original = new Date(value.startsAt);
+      const start = setTime(nextDay, original.getHours(), original.getMinutes());
+      const duration = value.endsAt
+        ? new Date(value.endsAt).getTime() - new Date(value.startsAt).getTime()
+        : 0;
+      onChange({
+        startsAt: start.toISOString(),
+        endsAt: duration > 0 ? new Date(start.getTime() + duration).toISOString() : undefined,
+        location: value?.location,
+        notes: value?.notes,
+        wishlistItemId: value?.wishlistItemId,
+      });
+      return;
+    }
     const slot = SLOTS[nextSlot];
     const start = setTime(nextDay, slot.hours, slot.minutes);
     const endsAt = nextWindow > 0 ? new Date(start.getTime() + nextWindow * 3600000).toISOString() : undefined;
@@ -56,6 +79,7 @@ export function WhenPicker({
       endsAt,
       location: value?.location,
       notes: value?.notes,
+      wishlistItemId: value?.wishlistItemId,
     });
   }
 
@@ -76,7 +100,7 @@ export function WhenPicker({
                 key={item.toISOString()}
                 onPress={() => {
                   setDay(item);
-                  emit(item, slotIndex, windowHours);
+                  emit(item, slotIndex, windowHours, useCustom);
                 }}
                 style={[styles.chip, active && styles.chipActive]}>
                 <Text style={[styles.chipKicker, active && styles.chipActiveText]}>
@@ -92,14 +116,28 @@ export function WhenPicker({
       <View>
         <Label>Time of day</Label>
         <View style={styles.wrap}>
+          {initialCustom && customStart ? (
+            <Pressable
+              onPress={() => {
+                setUseCustom(true);
+                emit(day, slotIndex, windowHours, true);
+              }}
+              style={[styles.slot, useCustom && styles.chipActive, { width: '100%' }]}>
+              <Text style={[styles.slotLabel, useCustom && styles.chipActiveText]}>This window</Text>
+              <Text style={[styles.slotTime, useCustom && styles.chipActiveText]}>
+                {formatTimeRange(value?.startsAt ?? '', value?.endsAt)}
+              </Text>
+            </Pressable>
+          ) : null}
           {SLOTS.map((slot, index) => {
-            const active = index === slotIndex;
+            const active = !useCustom && index === slotIndex;
             return (
               <Pressable
                 key={slot.label}
                 onPress={() => {
+                  setUseCustom(false);
                   setSlotIndex(index);
-                  emit(day, index, windowHours);
+                  emit(day, index, windowHours, false);
                 }}
                 style={[styles.slot, active && styles.chipActive]}>
                 <Text style={[styles.slotLabel, active && styles.chipActiveText]}>{slot.label}</Text>
@@ -112,28 +150,34 @@ export function WhenPicker({
         </View>
       </View>
 
-      <View>
-        <Label>Exact or a window</Label>
-        <View style={styles.wrap}>
-          {WINDOWS.map((item) => {
-            const active = item.hours === windowHours;
-            return (
-              <Pressable
-                key={item.label}
-                onPress={() => {
-                  setWindowHours(item.hours);
-                  emit(day, slotIndex, item.hours);
-                }}
-                style={[styles.window, active && styles.chipActive]}>
-                <Text style={[styles.windowLabel, active && styles.chipActiveText]}>{item.label}</Text>
-              </Pressable>
-            );
-          })}
+      {!useCustom ? (
+        <View>
+          <Label>Exact or a window</Label>
+          <View style={styles.wrap}>
+            {WINDOWS.map((item) => {
+              const active = item.hours === windowHours;
+              return (
+                <Pressable
+                  key={item.label}
+                  onPress={() => {
+                    setWindowHours(item.hours);
+                    emit(day, slotIndex, item.hours, false);
+                  }}
+                  style={[styles.window, active && styles.chipActive]}>
+                  <Text style={[styles.windowLabel, active && styles.chipActiveText]}>{item.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Body muted small style={{ marginTop: 8 }}>
+            A window is useful when the exact minute doesn’t matter — “sometime after dinner.”
+          </Body>
         </View>
-        <Body muted small style={{ marginTop: 8 }}>
-          A window is useful when the exact minute doesn’t matter — “sometime after dinner.”
+      ) : (
+        <Body muted small>
+          Keeping the time you picked from the calendar. Choose a named slot above if you’d rather shift it.
         </Body>
-      </View>
+      )}
     </View>
   );
 }

@@ -1,10 +1,10 @@
 # Againsoon
 
-A warm, couple-first Expo app for proposing, negotiating, and locking in the next time you’ll see each other.
+A warm, couple-first Expo app for proposing, negotiating, and locking in the next time you’ll see each other — with dual availability, date goals, wishlists, and memories around that booking loop.
 
-Two people share one couple space. One partner suggests a time (and optionally a place). The other accepts, counters, or declines. When you both agree, the meet is confirmed on a shared home calendar.
+Two people share one couple space. One partner suggests a time (and optionally a place). The other accepts, counters, or declines. When you both agree, the meet is confirmed. That loop is the product. Calendars, ideas, and key dates exist to make the next “yes” easier — not to become a household chore app.
 
-This repository is an MVP: the booking loop is fully usable on one device. Pairing and data live locally so a backend can be added later.
+This repository is a local MVP: the booking loop is fully usable on one device. Pairing and data live in AsyncStorage so a backend can be added later.
 
 ## Run it
 
@@ -21,53 +21,69 @@ Then:
 
 Node 20+ is enough. No native Xcode/Android Studio build is required for the MVP.
 
-## Demo the booking loop
+## Demo the competitive walkthrough
 
-The fastest path for a product walkthrough:
+Fastest path (Maya & Jordan):
 
 1. Open the app → **Get started** or **Try the demo couple**.
-2. On pairing, tap **Open demo couple** (Maya & Jordan).
-3. Home shows a confirmed meet at the lantern steps (about 45 minutes out), Sunday dinner later, and a pending picnic from Jordan.
-4. Turn on **hour-before location** on Home or **You two**, then switch to Jordan and turn it on there too — you’ll see how far each of you is.
-5. Open the picnic → **This time works**, or **Suggest a different time**, or **Can't make it**.
-6. Use the **Demo · viewing as Maya** banner to switch to Jordan and see the other side of a proposal.
-7. Tap **Suggest a time** to send a new meet, then switch profiles to accept it.
-8. **History** lists past meets. **You two** has the invite code (`HONEY·42` in the demo).
+2. On pairing, tap **Open demo couple**.
+3. **Home** shows:
+   - a confirmed meet at the lantern steps (about 45 minutes out)
+   - a date-goal card (`1 of 4` this month) with a gentle behind-pace nudge
+   - a key-date countdown (cabin weekend, anniversary)
+   - date prep for the next meet
+   - pending picnic from Jordan
+   - a memories strip from past dates
+4. Open **Calendar**. Sample Google/Apple/Outlook calendars are mocked (no OAuth). Me / Them / Us are colour-coded. Tap a **mutual free window** (or a free hour in Day view) → propose flow, time prefilled.
+5. Switch to Jordan via the demo banner. Open the picnic → **This time works**, or **Suggest a different time**, or **Can't make it**. Accepting plays a lock-in moment.
+6. After a past confirmed meet (History → the river walk), add a **memory** note and optional photo.
+7. **Ideas**: open a wishlist item → **Propose this**. Or use **Assist** (on-device, not a cloud LLM): pick vibe + budget → 2–3 suggestions → one-tap propose.
+8. **Us**: cadence goal, key dates & reminder list, accent pair, calendar privacy (“Busy” vs titles), invite code `HONEY·42`.
 
 Invite codes:
 
 - `DEMO` joins the sample couple as Jordan.
 - Creating a couple generates a code you can copy/share. On this device, joining is simulated locally.
 
-## What the MVP covers
+To re-seed the demo after exploring, **Us → Start over**, then open the demo couple again.
+
+## What this version covers
 
 - Onboarding and couple pairing (invite code, share text, or local demo)
-- Home: next confirmed meet, 14-day strip, pending proposals
-- Propose a meet: day, time of day, optional window, place, note
-- Proposal detail: accept / counter / decline with a note / withdraw
-- Confirmed meet detail, including optional hour-before location sharing
-- Shared history of past and declined meets
+- Home: next meet, date goal + nudge, key-date countdown, date prep, pending proposals, memories
+- Dual availability calendar (mocked): day/week, me/them/us, privacy, tap a free slot to propose
+- Propose a meet: day, time of day, optional window, place, note — including prefills from calendar / wishlist / Assist
+- Proposal detail: accept / counter / decline with a note / withdraw, plus lock-in delight
+- Confirmed meet detail, hour-before location sharing, date-prep checklist
+- Wishlists (title, notes, budget vibe) and on-device Assist
+- Key dates, countdowns, local reminder list
+- Memories on past confirmed meets (note + optional local photo or seeded stills)
+- Shared history
+- Customizable me/them/us accent pair
 - Switch whose eyes you’re using (one-phone demo)
 
 ## Intentionally stubbed
 
-- Real accounts, push notifications, and a remote backend
+- Real Google / Apple / Outlook OAuth (“Connect calendars — coming soon” with rich mock data)
+- Push notifications and home-screen widgets
+- Grocery / household chore suite (out of scope on purpose)
 - Native calendar export (“Add to calendar” explains this)
 - Live maps / place search (hour-before distance is estimated; GPS is used when allowed)
 - Multi-device sync (state is AsyncStorage on this device)
+- Cloud LLM (Assist is an on-device scorer over wishlist + a small recipe book)
 
 ## Project shape
 
 ```
-app/                 Expo Router screens
-src/components/      UI primitives and meet cards
-src/data/            Local store, persistence, selectors, seed demo
-src/lib/             Dates, ids, invite codes
-src/theme.ts         Color, type, spacing
+app/                 Expo Router screens (tabs: Home, Calendar, Ideas, History, Us)
+src/components/      UI primitives, calendar board, meet cards, memories
+src/data/            Local store, persistence (v3), selectors, seed demo
+src/lib/             Dates, availability, goals, Assist, ids
+src/theme.ts         Color, type, spacing, accent presets
 src/types.ts         Domain model
 ```
 
-`src/data/store.tsx` is the seam for a future API. Screens talk to actions (`propose`, `accept`, `counter`, `decline`) rather than to storage directly. Persistence is a small `loadState` / `saveState` helper around AsyncStorage.
+`src/data/store.tsx` is the seam for a future API. Screens talk to actions (`propose`, `accept`, `counter`, `decline`, plus wishlist / memory / goal helpers) rather than to storage directly. Persistence is a small `loadState` / `saveState` helper around AsyncStorage, with a v2 → v3 migrate.
 
 ## Stack
 

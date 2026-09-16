@@ -55,6 +55,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="propose" options={{ presentation: 'modal' }} />
           <Stack.Screen name="meet/[id]" />
+          <Stack.Screen name="memories" />
         </Stack>
       </AppStoreProvider>
     </AppShell>

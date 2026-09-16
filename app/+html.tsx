@@ -18,6 +18,6 @@ export default function Root({ children }: { children: ReactNode }) {
 
 const background = `
 body {
-  background-color: #100D14;
+  background-color: #0C090D;
 }
 `;

@@ -20,6 +20,7 @@ export function DemoSwitcher({
         <Text style={styles.kicker}>Demo · viewing as {current.name}</Text>
         <Text style={styles.action}>Switch to {other.name} to answer</Text>
       </View>
+      <View style={[styles.swatch, { backgroundColor: current.hue }]} />
     </Pressable>
   );
 }
@@ -34,6 +35,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
   },
   kicker: {
     fontFamily: fonts.bodySemi,
@@ -44,5 +47,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 12,
     color: colors.inkMuted,
+  },
+  swatch: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });

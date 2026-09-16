@@ -10,15 +10,28 @@ import {
 } from 'react';
 
 import { nowIso } from '@/src/lib/dates';
+import { applyPresetToCouple } from '@/src/lib/accents';
 import { createId, normalizeInviteCode } from '@/src/lib/id';
 import { clearState, loadState, saveState } from '@/src/data/persist';
 import {
   createCoupleFromName,
   createDemoState,
   createEmptyState,
+  defaultPrepForMeet,
   DEMO_INVITE_CODE,
+  workspaceForCouple,
 } from '@/src/data/seed';
-import type { Meet, PersistedState, ProposeInput } from '@/src/types';
+import type {
+  AccentPresetId,
+  BudgetVibe,
+  DateGoalCadence,
+  DateVibe,
+  KeyDateKind,
+  Meet,
+  MemoryPhotoKind,
+  PersistedState,
+  ProposeInput,
+} from '@/src/types';
 
 type Action =
   | { type: 'HYDRATE'; payload: PersistedState }
@@ -35,6 +48,18 @@ type Action =
   | { type: 'WITHDRAW'; meetId: string }
   | { type: 'CANCEL_CONFIRMED'; meetId: string; note?: string }
   | { type: 'SET_LOCATION_SHARING'; enabled: boolean }
+  | { type: 'SET_DATE_GOAL'; cadence: DateGoalCadence }
+  | { type: 'ADD_WISHLIST'; id: string; title: string; notes?: string; budget: BudgetVibe; vibe?: DateVibe }
+  | { type: 'REMOVE_WISHLIST'; id: string }
+  | { type: 'ADD_KEY_DATE'; id: string; title: string; kind: KeyDateKind; date: string; annual: boolean }
+  | { type: 'REMOVE_KEY_DATE'; id: string }
+  | { type: 'ADD_MEMORY'; id: string; meetId: string; note: string; photoUri?: string; photoKind?: MemoryPhotoKind }
+  | { type: 'REMOVE_MEMORY'; id: string }
+  | { type: 'TOGGLE_PREP'; id: string }
+  | { type: 'ADD_PREP'; id: string; meetId: string; text: string; assigneeId?: string }
+  | { type: 'REMOVE_PREP'; id: string }
+  | { type: 'TOGGLE_CALENDAR_PRIVACY'; calendarId: string }
+  | { type: 'SET_ACCENT_PRESET'; presetId: AccentPresetId }
   | { type: 'RESET' };
 
 function requireCurrent(state: PersistedState): string {
@@ -42,6 +67,31 @@ function requireCurrent(state: PersistedState): string {
     throw new Error('No current partner');
   }
   return state.currentPartnerId;
+}
+
+function trimOptional(value?: string): string | undefined {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function withCoupleWorkspace(state: PersistedState, couple: PersistedState['couple'], currentPartnerId: string): PersistedState {
+  const workspace = couple ? workspaceForCouple(couple) : createEmptyState();
+  return {
+    ...state,
+    onboardingComplete: true,
+    couple,
+    currentPartnerId,
+    meets: [],
+    locationSharingByPartnerId: {},
+    calendars: workspace.calendars,
+    busyPatterns: workspace.busyPatterns,
+    dateGoal: workspace.dateGoal,
+    wishlist: workspace.wishlist,
+    keyDates: workspace.keyDates,
+    memories: workspace.memories,
+    datePrep: workspace.datePrep,
+    accentPresetId: workspace.accentPresetId,
+  };
 }
 
 function reducer(state: PersistedState, action: Action): PersistedState {
@@ -54,13 +104,7 @@ function reducer(state: PersistedState, action: Action): PersistedState {
       return createDemoState();
     case 'CREATE_COUPLE': {
       const created = createCoupleFromName(state.draftName);
-      return {
-        ...state,
-        onboardingComplete: true,
-        couple: created.couple,
-        currentPartnerId: created.currentPartnerId,
-        meets: [],
-      };
+      return withCoupleWorkspace(state, created.couple, created.currentPartnerId);
     }
     case 'JOIN_WITH_CODE': {
       const code = normalizeInviteCode(action.code);
@@ -82,13 +126,7 @@ function reducer(state: PersistedState, action: Action): PersistedState {
         name: 'Your person',
         isPlaceholder: true,
       };
-      return {
-        ...state,
-        onboardingComplete: true,
-        couple: created.couple,
-        currentPartnerId: created.currentPartnerId,
-        meets: [],
-      };
+      return withCoupleWorkspace(state, created.couple, created.currentPartnerId);
     }
     case 'NAME_PARTNER': {
       if (!state.couple || !state.currentPartnerId) return state;
@@ -121,6 +159,7 @@ function reducer(state: PersistedState, action: Action): PersistedState {
         id: action.id,
         status: 'pending',
         createdAt: nowIso(),
+        wishlistItemId: action.input.wishlistItemId,
         revisions: [
           {
             id: createId('rev'),
@@ -137,6 +176,8 @@ function reducer(state: PersistedState, action: Action): PersistedState {
     }
     case 'ACCEPT': {
       const partnerId = requireCurrent(state);
+      const target = state.meets.find((meet) => meet.id === action.meetId);
+      const alreadyPrepped = state.datePrep.some((item) => item.meetId === action.meetId);
       return {
         ...state,
         meets: state.meets.map((meet) => {
@@ -157,6 +198,10 @@ function reducer(state: PersistedState, action: Action): PersistedState {
             ],
           };
         }),
+        datePrep:
+          target?.status === 'pending' && !alreadyPrepped
+            ? [...state.datePrep, ...defaultPrepForMeet(action.meetId)]
+            : state.datePrep,
       };
     }
     case 'COUNTER': {
@@ -242,16 +287,110 @@ function reducer(state: PersistedState, action: Action): PersistedState {
         },
       };
     }
+    case 'SET_DATE_GOAL':
+      return { ...state, dateGoal: { cadence: action.cadence } };
+    case 'ADD_WISHLIST': {
+      const authorId = requireCurrent(state);
+      return {
+        ...state,
+        wishlist: [
+          {
+            id: action.id,
+            title: action.title.trim(),
+            notes: trimOptional(action.notes),
+            budget: action.budget,
+            vibe: action.vibe,
+            createdAt: nowIso(),
+            createdById: authorId,
+          },
+          ...state.wishlist,
+        ],
+      };
+    }
+    case 'REMOVE_WISHLIST':
+      return { ...state, wishlist: state.wishlist.filter((item) => item.id !== action.id) };
+    case 'ADD_KEY_DATE':
+      return {
+        ...state,
+        keyDates: [
+          ...state.keyDates,
+          {
+            id: action.id,
+            title: action.title.trim(),
+            kind: action.kind,
+            date: action.date,
+            annual: action.annual,
+            reminderDaysBefore: action.kind === 'trip' ? [7, 1] : [14, 7, 1],
+          },
+        ],
+      };
+    case 'REMOVE_KEY_DATE':
+      return { ...state, keyDates: state.keyDates.filter((item) => item.id !== action.id) };
+    case 'ADD_MEMORY': {
+      const authorId = requireCurrent(state);
+      return {
+        ...state,
+        memories: [
+          {
+            id: action.id,
+            meetId: action.meetId,
+            note: action.note.trim(),
+            photoUri: action.photoUri,
+            photoKind: action.photoKind ?? (action.photoUri ? 'custom' : 'lantern'),
+            createdAt: nowIso(),
+            authorId,
+          },
+          ...state.memories,
+        ],
+      };
+    }
+    case 'REMOVE_MEMORY':
+      return { ...state, memories: state.memories.filter((item) => item.id !== action.id) };
+    case 'TOGGLE_PREP':
+      return {
+        ...state,
+        datePrep: state.datePrep.map((item) =>
+          item.id === action.id ? { ...item, done: !item.done } : item,
+        ),
+      };
+    case 'ADD_PREP':
+      return {
+        ...state,
+        datePrep: [
+          ...state.datePrep,
+          {
+            id: action.id,
+            meetId: action.meetId,
+            text: action.text.trim(),
+            done: false,
+            assigneeId: action.assigneeId,
+          },
+        ],
+      };
+    case 'REMOVE_PREP':
+      return { ...state, datePrep: state.datePrep.filter((item) => item.id !== action.id) };
+    case 'TOGGLE_CALENDAR_PRIVACY':
+      return {
+        ...state,
+        calendars: state.calendars.map((item) =>
+          item.id === action.calendarId
+            ? { ...item, showDetailsToPartner: !item.showDetailsToPartner }
+            : item,
+        ),
+      };
+    case 'SET_ACCENT_PRESET': {
+      if (!state.couple) return { ...state, accentPresetId: action.presetId };
+      return {
+        ...state,
+        accentPresetId: action.presetId,
+        couple: applyPresetToCouple(state.couple, action.presetId),
+      };
+    }
     case 'RESET':
       return createEmptyState();
     default:
       return state;
   }
-}
-
-function trimOptional(value?: string): string | undefined {
-  const trimmed = value?.trim();
-  return trimmed ? trimmed : undefined;
 }
 
 type StoreValue = {
@@ -270,6 +409,23 @@ type StoreValue = {
   withdraw: (meetId: string) => void;
   cancelConfirmed: (meetId: string, note?: string) => void;
   setLocationSharing: (enabled: boolean) => void;
+  setDateGoal: (cadence: DateGoalCadence) => void;
+  addWishlistItem: (input: { title: string; notes?: string; budget: BudgetVibe; vibe?: DateVibe }) => void;
+  removeWishlistItem: (id: string) => void;
+  addKeyDate: (input: { title: string; kind: KeyDateKind; date: string; annual: boolean }) => void;
+  removeKeyDate: (id: string) => void;
+  addMemory: (input: {
+    meetId: string;
+    note: string;
+    photoUri?: string;
+    photoKind?: MemoryPhotoKind;
+  }) => void;
+  removeMemory: (id: string) => void;
+  togglePrep: (id: string) => void;
+  addPrep: (meetId: string, text: string, assigneeId?: string) => void;
+  removePrep: (id: string) => void;
+  toggleCalendarPrivacy: (calendarId: string) => void;
+  setAccentPreset: (presetId: AccentPresetId) => void;
   reset: () => void;
 };
 
@@ -323,6 +479,20 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       withdraw: (meetId) => dispatch({ type: 'WITHDRAW', meetId }),
       cancelConfirmed: (meetId, note) => dispatch({ type: 'CANCEL_CONFIRMED', meetId, note }),
       setLocationSharing: (enabled) => dispatch({ type: 'SET_LOCATION_SHARING', enabled }),
+      setDateGoal: (cadence) => dispatch({ type: 'SET_DATE_GOAL', cadence }),
+      addWishlistItem: (input) =>
+        dispatch({ type: 'ADD_WISHLIST', id: createId('wish'), ...input }),
+      removeWishlistItem: (id) => dispatch({ type: 'REMOVE_WISHLIST', id }),
+      addKeyDate: (input) => dispatch({ type: 'ADD_KEY_DATE', id: createId('key'), ...input }),
+      removeKeyDate: (id) => dispatch({ type: 'REMOVE_KEY_DATE', id }),
+      addMemory: (input) => dispatch({ type: 'ADD_MEMORY', id: createId('mem'), ...input }),
+      removeMemory: (id) => dispatch({ type: 'REMOVE_MEMORY', id }),
+      togglePrep: (id) => dispatch({ type: 'TOGGLE_PREP', id }),
+      addPrep: (meetId, text, assigneeId) =>
+        dispatch({ type: 'ADD_PREP', id: createId('prep'), meetId, text, assigneeId }),
+      removePrep: (id) => dispatch({ type: 'REMOVE_PREP', id }),
+      toggleCalendarPrivacy: (calendarId) => dispatch({ type: 'TOGGLE_CALENDAR_PRIVACY', calendarId }),
+      setAccentPreset: (presetId) => dispatch({ type: 'SET_ACCENT_PRESET', presetId }),
       reset: () => {
         clearState().catch(() => {});
         dispatch({ type: 'RESET' });

@@ -22,13 +22,13 @@ export default function PairScreen() {
         <BackRow onPress={() => router.back()} />
         <Display size={32}>Pair up</Display>
         <Body muted style={{ marginTop: 8, marginBottom: 24 }}>
-          In real life this would send an invite. For this MVP, everything lives on this device — including a two-person demo.
+          Everything still lives on this device. The demo couple is the fastest way to walk calendar, propose, counter, and lock in.
         </Body>
 
         <Card style={{ gap: spacing.md, marginBottom: spacing.md }}>
           <Display size={22}>Try Maya & Jordan</Display>
           <Body muted small>
-            Preloaded with a pending picnic, a confirmed dinner, and a little history. Switch profiles to negotiate both sides.
+            Preloaded with calendars, a date-night goal, wishlists, a pending picnic, and a little history. Switch profiles to negotiate both sides.
           </Body>
           <Button
             label="Open demo couple"

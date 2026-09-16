@@ -17,7 +17,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { colors, fonts, phoneMaxWidth, radii, shadow, spacing } from '@/src/theme';
+import { colors, fonts, phoneMaxWidth, radii, shadow, softShadow, spacing } from '@/src/theme';
 
 export function AppShell({ children, style }: { children: ReactNode; style?: StyleProp<ViewStyle> }) {
   return (
@@ -41,11 +41,7 @@ export function Screen({
   const content = scroll ? (
     <ScrollView
       keyboardShouldPersistTaps="handled"
-      contentContainerStyle={[
-        styles.scrollContent,
-        padded && styles.padded,
-        { flexGrow: 1 },
-      ]}
+      contentContainerStyle={[styles.scrollContent, padded && styles.padded, { flexGrow: 1 }]}
       showsVerticalScrollIndicator={false}>
       {children}
     </ScrollView>
@@ -62,14 +58,16 @@ export function Screen({
 
 export function Display({
   children,
-  size = 34,
+  size = 32,
   style,
 }: {
   children: ReactNode;
   size?: number;
   style?: StyleProp<TextStyle>;
 }) {
-  return <Text style={[styles.display, { fontSize: size, lineHeight: size * 1.18 }, style]}>{children}</Text>;
+  return (
+    <Text style={[styles.display, { fontSize: size, lineHeight: size * 1.16 }, style]}>{children}</Text>
+  );
 }
 
 export function Body({
@@ -77,14 +75,17 @@ export function Body({
   muted,
   small,
   style,
+  numberOfLines,
 }: {
   children: ReactNode;
   muted?: boolean;
   small?: boolean;
   style?: StyleProp<TextStyle>;
+  numberOfLines?: number;
 }) {
   return (
     <Text
+      numberOfLines={numberOfLines}
       style={[
         styles.body,
         muted && { color: colors.inkMuted },
@@ -104,19 +105,23 @@ export function Card({
   children,
   style,
   onPress,
+  flush,
 }: {
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   onPress?: () => void;
+  flush?: boolean;
 }) {
   if (onPress) {
     return (
-      <Pressable onPress={onPress} style={({ pressed }) => [styles.card, style, pressed && styles.pressed]}>
+      <Pressable
+        onPress={onPress}
+        style={({ pressed }) => [styles.card, flush && styles.cardFlush, style, pressed && styles.pressed]}>
         {children}
       </Pressable>
     );
   }
-  return <View style={[styles.card, style]}>{children}</View>;
+  return <View style={[styles.card, flush && styles.cardFlush, style]}>{children}</View>;
 }
 
 export function Button({
@@ -129,7 +134,7 @@ export function Button({
 }: {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost' | 'sage' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'sage' | 'danger' | 'gold';
   icon?: keyof typeof Ionicons.glyphMap;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
@@ -140,6 +145,7 @@ export function Button({
     ghost: { bg: 'transparent', fg: colors.ink },
     sage: { bg: colors.sage, fg: colors.onAccent },
     danger: { bg: colors.dangerSoft, fg: colors.danger },
+    gold: { bg: colors.gold, fg: colors.onAccent },
   }[variant];
 
   return (
@@ -185,9 +191,11 @@ export function TextField({
 export function Pill({
   label,
   tone = 'neutral',
+  color,
 }: {
   label: string;
-  tone?: 'neutral' | 'accent' | 'sage' | 'gold' | 'danger';
+  tone?: 'neutral' | 'accent' | 'sage' | 'gold' | 'danger' | 'us' | 'me' | 'them';
+  color?: string;
 }) {
   const palette = {
     neutral: { bg: colors.canvasDeep, fg: colors.inkMuted },
@@ -195,10 +203,13 @@ export function Pill({
     sage: { bg: colors.sageSoft, fg: colors.sage },
     gold: { bg: colors.goldSoft, fg: colors.gold },
     danger: { bg: colors.dangerSoft, fg: colors.danger },
+    us: { bg: colors.usSoft, fg: colors.us },
+    me: { bg: colors.accentSoft, fg: colors.accentDeep },
+    them: { bg: colors.sageSoft, fg: colors.sage },
   }[tone];
   return (
-    <View style={[styles.pill, { backgroundColor: palette.bg }]}>
-      <Text style={[styles.pillText, { color: palette.fg }]}>{label}</Text>
+    <View style={[styles.pill, { backgroundColor: color ? `${color}33` : palette.bg }]}>
+      <Text style={[styles.pillText, { color: color ?? palette.fg }]}>{label}</Text>
     </View>
   );
 }
@@ -210,7 +221,9 @@ export function Avatar({ name, hue, size = 42 }: { name: string; hue: string; si
         styles.avatar,
         { width: size, height: size, borderRadius: size / 2, backgroundColor: hue },
       ]}>
-      <Text style={[styles.avatarLetter, { fontSize: size * 0.42 }]}>{name.trim().charAt(0).toUpperCase() || '?'}</Text>
+      <Text style={[styles.avatarLetter, { fontSize: size * 0.42 }]}>
+        {name.trim().charAt(0).toUpperCase() || '?'}
+      </Text>
     </View>
   );
 }
@@ -291,6 +304,163 @@ export function WarmMark() {
   );
 }
 
+export function SectionHeader({
+  title,
+  action,
+  onAction,
+}: {
+  title: string;
+  action?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <View style={styles.sectionHeader}>
+      <Label>{title}</Label>
+      {action && onAction ? (
+        <Pressable onPress={onAction} hitSlop={8}>
+          <Text style={styles.sectionAction}>{action}</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function EmptyState({
+  icon,
+  title,
+  body,
+  actionLabel,
+  onAction,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  body: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <View style={styles.empty}>
+      <View style={styles.emptyIcon}>
+        <Ionicons name={icon} size={22} color={colors.gold} />
+      </View>
+      <Display size={22}>{title}</Display>
+      <Body muted small style={{ textAlign: 'center' }}>
+        {body}
+      </Body>
+      {actionLabel && onAction ? (
+        <Button label={actionLabel} variant="secondary" onPress={onAction} style={{ alignSelf: 'stretch' }} />
+      ) : null}
+    </View>
+  );
+}
+
+export function ProgressBar({ ratio, color }: { ratio: number; color?: string }) {
+  return (
+    <View style={styles.progressTrack}>
+      <View
+        style={[
+          styles.progressFill,
+          { width: `${Math.round(Math.max(0.06, Math.min(1, ratio)) * 100)}%`, backgroundColor: color ?? colors.gold },
+        ]}
+      />
+    </View>
+  );
+}
+
+export function Chip({
+  label,
+  active,
+  onPress,
+  color,
+}: {
+  label: string;
+  active?: boolean;
+  onPress: () => void;
+  color?: string;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={[
+        styles.chip,
+        active && { backgroundColor: colors.invert, borderColor: colors.invert },
+        !active && color ? { borderColor: color } : null,
+      ]}>
+      <Text style={[styles.chipLabel, active && { color: colors.onInvert }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+export function ColorDot({ color, size = 8 }: { color: string; size?: number }) {
+  return (
+    <View
+      style={{
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: color,
+      }}
+    />
+  );
+}
+
+export function Legend({
+  me,
+  them,
+  us,
+  meLabel,
+  themLabel,
+}: {
+  me: string;
+  them: string;
+  us: string;
+  meLabel: string;
+  themLabel: string;
+}) {
+  return (
+    <View style={styles.legend}>
+      <View style={styles.legendItem}>
+        <ColorDot color={me} />
+        <Text style={styles.legendText}>{meLabel}</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <ColorDot color={them} />
+        <Text style={styles.legendText}>{themLabel}</Text>
+      </View>
+      <View style={styles.legendItem}>
+        <ColorDot color={us} />
+        <Text style={styles.legendText}>Us</Text>
+      </View>
+    </View>
+  );
+}
+
+export function Segmented({
+  options,
+  value,
+  onChange,
+}: {
+  options: { id: string; label: string }[];
+  value: string;
+  onChange: (id: string) => void;
+}) {
+  return (
+    <View style={styles.segmented}>
+      {options.map((option) => {
+        const active = option.id === value;
+        return (
+          <Pressable
+            key={option.id}
+            onPress={() => onChange(option.id)}
+            style={[styles.segment, active && styles.segmentActive]}>
+            <Text style={[styles.segmentLabel, active && styles.segmentLabelActive]}>{option.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   shell: {
     flex: 1,
@@ -312,7 +482,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 96,
+    paddingBottom: 108,
   },
   padded: {
     paddingHorizontal: spacing.lg,
@@ -321,7 +491,7 @@ const styles = StyleSheet.create({
   display: {
     fontFamily: fonts.display,
     color: colors.ink,
-    letterSpacing: -0.6,
+    letterSpacing: -0.7,
   },
   body: {
     fontFamily: fonts.body,
@@ -331,8 +501,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fonts.bodySemi,
-    fontSize: 13,
-    letterSpacing: 0.4,
+    fontSize: 11,
+    letterSpacing: 1.1,
     textTransform: 'uppercase',
     color: colors.inkMuted,
   },
@@ -344,8 +514,11 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     ...shadow,
   },
+  cardFlush: {
+    ...softShadow,
+  },
   pressed: {
-    opacity: 0.82,
+    opacity: 0.86,
     transform: [{ scale: 0.99 }],
   },
   button: {
@@ -451,5 +624,94 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.cardBorder,
     ...shadow,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  sectionAction: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 13,
+    color: colors.accentDeep,
+  },
+  empty: {
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 18,
+    paddingHorizontal: 8,
+  },
+  emptyIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.goldSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: radii.pill,
+    backgroundColor: colors.canvasDeep,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 8,
+    borderRadius: radii.pill,
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.card,
+  },
+  chipLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: colors.ink,
+  },
+  legend: {
+    flexDirection: 'row',
+    gap: 14,
+    flexWrap: 'wrap',
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  legendText: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 12,
+    color: colors.inkMuted,
+  },
+  segmented: {
+    flexDirection: 'row',
+    backgroundColor: colors.canvasDeep,
+    borderRadius: radii.pill,
+    padding: 4,
+    gap: 4,
+  },
+  segment: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: radii.pill,
+    alignItems: 'center',
+  },
+  segmentActive: {
+    backgroundColor: colors.cardElevated,
+  },
+  segmentLabel: {
+    fontFamily: fonts.bodyMedium,
+    fontSize: 13,
+    color: colors.inkSoft,
+  },
+  segmentLabelActive: {
+    color: colors.ink,
+    fontFamily: fonts.bodySemi,
   },
 });

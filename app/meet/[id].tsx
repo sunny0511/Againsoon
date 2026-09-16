@@ -1,9 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { DatePrepList } from '@/src/components/DatePrepList';
 import { LocationSharingCard } from '@/src/components/LocationSharingCard';
+import { LockInMoment } from '@/src/components/LockInMoment';
+import { MemoryCard } from '@/src/components/MemoryCard';
 import {
   BackRow,
   Body,
@@ -16,7 +21,7 @@ import {
   Screen,
   TextField,
 } from '@/src/components/ui';
-import { canRespond, isWaitingOnOther, latestRevision, partnerById } from '@/src/data/selectors';
+import { canRespond, isWaitingOnOther, latestRevision, memoriesForMeet, partnerById } from '@/src/data/selectors';
 import { useAppStore } from '@/src/data/store';
 import { formatCountdown, formatLongDate, formatTimeRange, isInPast } from '@/src/lib/dates';
 import { colors, fonts, spacing } from '@/src/theme';
@@ -24,11 +29,14 @@ import { colors, fonts, spacing } from '@/src/theme';
 export default function MeetDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { state, accept, decline, withdraw, cancelConfirmed } = useAppStore();
+  const { state, accept, decline, withdraw, cancelConfirmed, addMemory } = useAppStore();
   const [declineOpen, setDeclineOpen] = useState(false);
   const [declineNote, setDeclineNote] = useState('');
   const [calendarHint, setCalendarHint] = useState(false);
   const [giveUp, setGiveUp] = useState(false);
+  const [lockedIn, setLockedIn] = useState(false);
+  const [memoryNote, setMemoryNote] = useState('');
+  const [photoUri, setPhotoUri] = useState<string | undefined>();
 
   useEffect(() => {
     const timer = setTimeout(() => setGiveUp(true), 400);
@@ -46,6 +54,7 @@ export default function MeetDetailScreen() {
   const actionable = canRespond(meet, state.currentPartnerId);
   const waiting = isWaitingOnOther(meet, state.currentPartnerId);
   const past = meet.status === 'confirmed' && isInPast(revision.startsAt);
+  const memories = memoriesForMeet(state.memories, meet.id);
 
   const statusTone = meet.status === 'confirmed' ? 'sage' : meet.status === 'declined' ? 'danger' : actionable ? 'accent' : 'gold';
   const statusLabel =
@@ -61,8 +70,33 @@ export default function MeetDetailScreen() {
           ? `Waiting on you`
           : `Waiting on ${them?.name ?? 'them'}`;
 
+  async function pickPhoto() {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        quality: 0.7,
+      });
+      if (!result.canceled && result.assets[0]?.uri) {
+        setPhotoUri(result.assets[0].uri);
+      }
+    } catch {
+      setPhotoUri(undefined);
+    }
+  }
+
+  async function lockIn() {
+    try {
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      // web / unsupported
+    }
+    accept(meet!.id);
+    setLockedIn(true);
+  }
+
   return (
-    <Screen>
+    <View style={{ flex: 1 }}>
+      <Screen>
         <BackRow onPress={() => router.back()} />
         <Pill label={statusLabel} tone={statusTone} />
         <Display size={34} style={{ marginTop: 12 }}>
@@ -86,6 +120,13 @@ export default function MeetDetailScreen() {
           <View style={{ marginTop: spacing.lg }}>
             <LocationSharingCard meet={meet} />
           </View>
+        ) : null}
+
+        {meet.status === 'confirmed' && !past ? (
+          <Card style={{ marginTop: spacing.lg, gap: 10 }}>
+            <Label>Date prep</Label>
+            <DatePrepList meetId={meet.id} />
+          </Card>
         ) : null}
 
         <View style={{ marginTop: spacing.xl }}>
@@ -126,9 +167,46 @@ export default function MeetDetailScreen() {
           </View>
         </View>
 
+        {past ? (
+          <Card style={{ marginTop: spacing.xl, gap: 12 }}>
+            <Display size={22}>Memory</Display>
+            {memories.map((memory) => (
+              <MemoryCard key={memory.id} memory={memory} couple={state.couple!} when={revision.startsAt} />
+            ))}
+            <TextField
+              label="A short note"
+              placeholder="The river was silver."
+              value={memoryNote}
+              onChangeText={setMemoryNote}
+              multiline
+            />
+            <Button
+              label={photoUri ? 'Photo attached' : 'Add a photo (optional)'}
+              variant="ghost"
+              icon="image-outline"
+              onPress={pickPhoto}
+            />
+            <Button
+              label="Save memory"
+              variant="secondary"
+              disabled={!memoryNote.trim()}
+              onPress={() => {
+                addMemory({
+                  meetId: meet.id,
+                  note: memoryNote.trim(),
+                  photoUri,
+                  photoKind: photoUri ? 'custom' : 'lantern',
+                });
+                setMemoryNote('');
+                setPhotoUri(undefined);
+              }}
+            />
+          </Card>
+        ) : null}
+
         {actionable ? (
           <View style={{ marginTop: spacing.xl, gap: 10 }}>
-            <Button label="This time works" variant="sage" icon="checkmark" onPress={() => accept(meet.id)} />
+            <Button label="This time works" variant="sage" icon="checkmark" onPress={lockIn} />
             <Button
               label="Suggest a different time"
               variant="secondary"
@@ -176,7 +254,7 @@ export default function MeetDetailScreen() {
             />
             {calendarHint ? (
               <Body muted small>
-                Calendar export is stubbed for this MVP. The time is already confirmed here in Againsoon.
+                Calendar export is stubbed. The time is already confirmed here in Againsoon.
               </Body>
             ) : null}
             <Button
@@ -186,7 +264,13 @@ export default function MeetDetailScreen() {
             />
           </View>
         ) : null}
-    </Screen>
+      </Screen>
+      <LockInMoment
+        visible={lockedIn}
+        partnerName={them?.name ?? 'them'}
+        onDone={() => setLockedIn(false)}
+      />
+    </View>
   );
 }
 

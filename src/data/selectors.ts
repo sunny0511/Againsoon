@@ -1,5 +1,14 @@
-import { isInPast } from '@/src/lib/dates';
-import type { Couple, Meet, MeetRevision, Partner, PersistedState } from '@/src/types';
+import { formatDaysUntil, isInPast, nextOccurrence } from '@/src/lib/dates';
+import { colors } from '@/src/theme';
+import type {
+  Couple,
+  KeyDate,
+  Meet,
+  MeetRevision,
+  Memory,
+  Partner,
+  PersistedState,
+} from '@/src/types';
 
 export function currentPartner(state: PersistedState): Partner | null {
   if (!state.couple || !state.currentPartnerId) return null;
@@ -96,4 +105,74 @@ export function pendingOnDay(meets: Meet[], day: Date): Meet[] {
       start.getDate() === day.getDate()
     );
   });
+}
+
+export function coupleAccents(state: PersistedState): { me: string; them: string; us: string } {
+  const me = currentPartner(state);
+  const them = otherPartner(state);
+  return {
+    me: me?.hue ?? colors.accent,
+    them: them?.hue ?? colors.sage,
+    us: state.couple?.usHue ?? colors.gold,
+  };
+}
+
+export function memoriesForMeet(memories: Memory[], meetId: string): Memory[] {
+  return memories
+    .filter((memory) => memory.meetId === meetId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+export function sortedMemories(memories: Memory[]): Memory[] {
+  return [...memories].sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
+export type UpcomingKeyDate = {
+  item: KeyDate;
+  occurs: Date;
+  label: string;
+};
+
+export function upcomingKeyDates(keyDates: KeyDate[], now = new Date()): UpcomingKeyDate[] {
+  return keyDates
+    .map((item) => {
+      const occurs = nextOccurrence(item.date, item.annual, now);
+      return { item, occurs, label: formatDaysUntil(occurs, now) };
+    })
+    .sort((a, b) => a.occurs.getTime() - b.occurs.getTime());
+}
+
+export type ReminderRow = {
+  id: string;
+  title: string;
+  fireAt: Date;
+  kind: KeyDate['kind'];
+  daysBefore: number;
+};
+
+export function upcomingReminders(keyDates: KeyDate[], now = new Date()): ReminderRow[] {
+  const rows: ReminderRow[] = [];
+  for (const item of keyDates) {
+    const occurs = nextOccurrence(item.date, item.annual, now);
+    for (const daysBefore of item.reminderDaysBefore) {
+      const fireAt = new Date(occurs);
+      fireAt.setDate(fireAt.getDate() - daysBefore);
+      if (fireAt.getTime() >= now.getTime() - 86400000) {
+        rows.push({
+          id: `${item.id}-${daysBefore}`,
+          title: item.title,
+          fireAt,
+          kind: item.kind,
+          daysBefore,
+        });
+      }
+    }
+  }
+  return rows.sort((a, b) => a.fireAt.getTime() - b.fireAt.getTime());
+}
+
+export function prepForMeet(state: PersistedState, meetId: string) {
+  return state.datePrep.filter((item) => item.meetId === meetId);
 }

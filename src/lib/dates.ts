@@ -47,6 +47,26 @@ export function startOfDay(date: Date): Date {
   return next;
 }
 
+export function endOfDay(date: Date): Date {
+  const next = new Date(date);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
+export function startOfWeek(date: Date): Date {
+  const start = startOfDay(date);
+  start.setDate(start.getDate() - start.getDay());
+  return start;
+}
+
+export function startOfMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function daysInMonth(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+}
+
 export function addDays(date: Date, amount: number): Date {
   const next = new Date(date);
   next.setDate(next.getDate() + amount);
@@ -136,6 +156,17 @@ export function formatCountdown(iso: string, now = new Date()): string {
   return formatShortDate(iso);
 }
 
+export function formatDaysUntil(date: Date, now = new Date()): string {
+  const days = Math.round((startOfDay(date).getTime() - startOfDay(now).getTime()) / 86400000);
+  if (days < 0) return formatCountdown(date.toISOString(), now);
+  if (days === 0) return 'today';
+  if (days === 1) return 'tomorrow';
+  if (days < 7) return `in ${days} days`;
+  if (days < 30) return `in ${days} days`;
+  const months = Math.round(days / 30);
+  return months === 1 ? 'in a month' : `in ${months} months`;
+}
+
 export function isInPast(iso: string, now = new Date()): boolean {
   return new Date(iso).getTime() < now.getTime();
 }
@@ -147,4 +178,26 @@ export function upcomingDays(count = 14, from = new Date()): Date[] {
 
 export function daysAround(count = 14, from = new Date()): Date[] {
   return upcomingDays(count, from);
+}
+
+export function nextOccurrence(isoDate: string, annual: boolean, now = new Date()): Date {
+  const source = new Date(isoDate);
+  if (!annual) return source;
+  const next = new Date(now.getFullYear(), source.getMonth(), source.getDate());
+  if (startOfDay(next).getTime() < startOfDay(now).getTime()) {
+    next.setFullYear(next.getFullYear() + 1);
+  }
+  return next;
+}
+
+export function overlaps(aStart: Date, aEnd: Date, bStart: Date, bEnd: Date): boolean {
+  return aStart.getTime() < bEnd.getTime() && bStart.getTime() < aEnd.getTime();
+}
+
+export function hourRange(day: Date, fromHour = 8, toHour = 22): { start: Date; end: Date }[] {
+  const hours: { start: Date; end: Date }[] = [];
+  for (let hour = fromHour; hour < toHour; hour += 1) {
+    hours.push({ start: setTime(day, hour, 0), end: setTime(day, hour + 1, 0) });
+  }
+  return hours;
 }
