@@ -28,15 +28,6 @@ export default function CalendarScreen() {
         Sample calendars, plus locked-in meets and open proposals. Tap a mutual free slot to propose.
       </Body>
 
-      <Card style={{ gap: 10, marginBottom: spacing.lg }}>
-        <Label>Connect calendars</Label>
-        <Body muted small>
-          Google, Apple, and Outlook sync is coming soon. These blocks are rich mock data so you can still plan around
-          a real-looking week.
-        </Body>
-        <Button label="Connect calendars — coming soon" variant="ghost" onPress={() => {}} />
-      </Card>
-
       <AvailabilityBoard
         me={me}
         them={them}
@@ -57,6 +48,16 @@ export default function CalendarScreen() {
         }
         onOpenMeet={(id) => router.push(`/meet/${id}`)}
       />
+
+      <View style={{ height: spacing.lg }} />
+      <Card style={{ gap: 10, marginBottom: spacing.lg }}>
+        <Label>Connect calendars</Label>
+        <Body muted small>
+          Google, Apple, and Outlook sync is coming soon. These blocks are rich mock data so you can still plan around
+          a real-looking week.
+        </Body>
+        <Button label="Connect calendars — coming soon" variant="ghost" onPress={() => {}} />
+      </Card>
 
       <View style={{ height: spacing.lg }} />
       <Label>Privacy on mock calendars</Label>
