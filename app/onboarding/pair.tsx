@@ -9,48 +9,68 @@ import { spacing } from '@/src/theme';
 export default function PairScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ demo?: string }>();
-  const { state, startDemo, createCouple, joinWithCode } = useAppStore();
+  const { account, state, startDemo, createCouple, joinWithCode, setDraftName } = useAppStore();
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
   function goHome() {
     router.replace('/(tabs)');
   }
+
+  async function openDemo() {
+    setBusy(true);
+    try {
+      await startDemo();
+      goHome();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const firstName = state.draftName || account?.name || '';
 
   return (
     <Screen>
         <BackRow onPress={() => router.back()} />
         <Display size={32}>Pair up</Display>
         <Body muted style={{ marginTop: 8, marginBottom: 24 }}>
-          Everything still lives on this device. The demo couple is the fastest way to walk calendar, propose, counter, and lock in.
+          {account && !account.isSandbox
+            ? `Signed in as ${account.email}. Create a couple or join with an invite code. Data stays on this device.`
+            : 'Create a couple, join with a code, or open the sample couple to walk the booking loop.'}
         </Body>
 
         <Card style={{ gap: spacing.md, marginBottom: spacing.md }}>
           <Display size={22}>Try Maya & Jordan</Display>
           <Body muted small>
-            Preloaded with calendars, a date-night goal, wishlists, a pending picnic, and a little history. Switch profiles to negotiate both sides.
+            Sample calendars, a pending picnic, lists, and a lock-in. Switch profiles to negotiate both sides. App Review can use this path.
           </Body>
           <Button
-            label="Open demo couple"
+            label={busy ? 'Opening…' : 'Open sample couple'}
             variant="sage"
-            onPress={() => {
-              startDemo();
-              goHome();
-            }}
+            disabled={busy}
+            onPress={openDemo}
           />
         </Card>
 
         <Card style={{ gap: spacing.md, marginBottom: spacing.md }}>
           <Display size={22}>Create an invite</Display>
           <Body muted small>
-            {state.draftName ? `You’ll be ${state.draftName}. ` : ''}We’ll generate a short code your person can type on this phone.
+            {firstName ? `You’ll be ${firstName}. ` : ''}We’ll generate a short code your person can type on this phone.
           </Body>
           <Button
             label="Create couple"
             onPress={() => {
-              if (!state.draftName.trim()) {
+              if (!account) {
+                router.push('/onboarding/account');
+                return;
+              }
+              if (!state.draftName.trim() && !account.name) {
                 router.push('/onboarding/name');
                 return;
+              }
+              if (!state.draftName.trim() && account.name) {
+                setDraftName(account.name);
               }
               createCouple();
               goHome();
@@ -82,6 +102,10 @@ export default function PairScreen() {
             label="Join"
             variant="secondary"
             onPress={() => {
+              if (!account) {
+                router.push('/onboarding/account');
+                return;
+              }
               if (!code.trim()) {
                 setError('Enter an invite code first.');
                 return;
@@ -94,7 +118,7 @@ export default function PairScreen() {
         <View style={{ height: 12 }} />
         {params.demo === '1' ? (
           <Body muted small>
-            Tip: the demo button above is the fastest way to walk the booking loop.
+            Tip: Open sample couple is the fastest way to walk propose → counter → lock-in.
           </Body>
         ) : null}
     </Screen>

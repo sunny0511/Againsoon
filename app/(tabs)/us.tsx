@@ -3,6 +3,8 @@ import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
+import { NextMeetWidget } from '@/src/components/NextMeetWidget';
+import { SharedListCard } from '@/src/components/SharedListCard';
 import {
   AvatarStack,
   Body,
@@ -36,6 +38,7 @@ export default function UsScreen() {
   const router = useRouter();
   const {
     state,
+    account,
     switchPartner,
     namePartner,
     reset,
@@ -45,6 +48,9 @@ export default function UsScreen() {
     toggleCalendarPrivacy,
     addKeyDate,
     removeKeyDate,
+    setWidgetEnabled,
+    signOut,
+    deleteAccount,
   } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
@@ -78,8 +84,34 @@ export default function UsScreen() {
     }
   }
 
+  function confirmDeleteAccount() {
+    const message = 'This permanently deletes your Againsoon account and couple data on this device.';
+    if (Platform.OS === 'web') {
+      const confirmed =
+        typeof window !== 'undefined' && window.confirm(`Delete account?\n\n${message}`);
+      if (confirmed) {
+        deleteAccount().then(() => router.replace('/onboarding'));
+      }
+      return;
+    }
+    Alert.alert('Delete account?', message, [
+      { text: 'Keep it', style: 'cancel' },
+      {
+        text: 'Delete account',
+        style: 'destructive',
+        onPress: () => {
+          deleteAccount().then(() => router.replace('/onboarding'));
+        },
+      },
+    ]);
+  }
+
+  function confirmSignOut() {
+    signOut().then(() => router.replace('/onboarding'));
+  }
+
   function confirmReset() {
-    const message = 'This clears the couple and meets saved on this device.';
+    const message = 'This clears the couple and meets saved on this device. Your account stays signed in.';
     if (Platform.OS === 'web') {
       const confirmed =
         typeof window !== 'undefined' && window.confirm(`Start over?\n\n${message}`);
@@ -106,7 +138,7 @@ export default function UsScreen() {
     <Screen>
       <Display size={32}>Us</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 24 }}>
-        Pairing, cadence, key dates, and the colours you two use. Still local to this device.
+        Pairing, your account, lists, and the colours you two use. Couple data stays on this device.
       </Body>
 
       <Card style={{ gap: spacing.md, alignItems: 'flex-start' }}>
@@ -119,6 +151,24 @@ export default function UsScreen() {
         </Body>
         <Button label={`Switch to ${them.name}`} variant="secondary" onPress={switchPartner} />
       </Card>
+
+      {account ? (
+        <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
+          <Display size={22}>Account</Display>
+          <Body>
+            {account.name} · {account.email}
+          </Body>
+          <Body muted small>
+            {account.isSandbox
+              ? 'Sample session for trying the booking loop. Create a real account from Welcome when you’re ready.'
+              : 'Signed in on this device. Delete account removes it from this phone (App Store requirement).'}
+          </Body>
+          <Button label="Privacy Policy" variant="ghost" onPress={() => router.push('/legal/privacy')} />
+          <Button label="Terms" variant="ghost" onPress={() => router.push('/legal/terms')} />
+          <Button label="Sign out" variant="secondary" onPress={confirmSignOut} />
+          <Button label="Delete account" variant="danger" onPress={confirmDeleteAccount} />
+        </Card>
+      ) : null}
 
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
         <Display size={22}>Date cadence</Display>
@@ -192,10 +242,31 @@ export default function UsScreen() {
         />
       </Card>
 
+      {state.lists.map((list) => (
+        <Card key={list.id} style={{ gap: spacing.md, marginTop: spacing.md }}>
+          <SharedListCard list={list} />
+        </Card>
+      ))}
+
+      <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
+        <Display size={22}>Home widget</Display>
+        <Body muted small>
+          A live next-meet card you can pin. On the web, open it and use Add to Home Screen. Native home-screen widgets can read this same payload.
+        </Body>
+        <ToggleRow
+          label="Show widget on Home"
+          description="The compact next-meet card, grocery count, and pending proposals."
+          value={state.widgetEnabled}
+          onValueChange={setWidgetEnabled}
+        />
+        {state.widgetEnabled ? <NextMeetWidget state={state} onPress={() => router.push('/widget')} /> : null}
+        <Button label="Open widget" variant="secondary" onPress={() => router.push('/widget')} />
+      </Card>
+
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
         <Display size={22}>Upcoming reminders</Display>
         <Body muted small>
-          Local stubs — no push notifications yet. You’ll see them here as the date approaches.
+          These fire on the widget and this list as the date approaches. Push notifications are still a later backend.
         </Body>
         {reminders.length === 0 ? (
           <Body muted small>
@@ -295,8 +366,8 @@ export default function UsScreen() {
       <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
         <Display size={22}>On this device</Display>
         <Body muted small>
-          Meets, ideas, and calendars are saved in local storage. Real OAuth, push, and multi-device sync stay out of
-          scope.
+          Meets, ideas, lists, and calendars are saved on this device for your account. Multi-device sync is a later
+          release.
         </Body>
         <Button label="Start over" variant="danger" onPress={confirmReset} />
       </Card>

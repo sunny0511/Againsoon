@@ -11,10 +11,44 @@ import type {
   Meet,
   Memory,
   PersistedState,
+  PlaceRef,
+  SharedList,
+  SharedListItem,
   WishlistItem,
 } from '@/src/types';
 
 export const DEMO_INVITE_CODE = 'HONEY42';
+
+const PLACE_LANTERN: PlaceRef = {
+  name: 'The lantern steps',
+  lat: -33.8583,
+  lon: 151.2153,
+  label: 'Circular Quay, Sydney',
+};
+const PLACE_LAWN: PlaceRef = {
+  name: 'Riverside lawn',
+  lat: -33.8715,
+  lon: 151.2156,
+  label: 'Royal Botanic Garden, Sydney',
+};
+const PLACE_GOLDFINCH: PlaceRef = {
+  name: 'Goldfinch wine bar',
+  lat: -33.8841,
+  lon: 151.211,
+  label: 'Surry Hills, Sydney',
+};
+const PLACE_LOOP: PlaceRef = {
+  name: 'The loop by the river',
+  lat: -33.869,
+  lon: 151.217,
+  label: 'Farm Cove walk, Sydney',
+};
+const PLACE_OVEN: PlaceRef = {
+  name: 'The Little Oven',
+  lat: -33.8792,
+  lon: 151.2055,
+  label: 'Darlinghurst, Sydney',
+};
 
 export function defaultCalendars(couple: Couple): CalendarAccount[] {
   const [me, them] = couple.partners;
@@ -102,6 +136,16 @@ export function defaultBusyPatterns(couple: Couple, calendars = defaultCalendars
   ];
 }
 
+export function defaultLists(): { lists: SharedList[]; listItems: SharedListItem[] } {
+  return {
+    lists: [
+      { id: 'list_groceries', kind: 'groceries', title: 'For the next meet' },
+      { id: 'list_chores', kind: 'chores', title: 'Us chores' },
+    ],
+    listItems: [],
+  };
+}
+
 export function workspaceForCouple(couple: Couple): Pick<
   PersistedState,
   | 'calendars'
@@ -111,9 +155,13 @@ export function workspaceForCouple(couple: Couple): Pick<
   | 'keyDates'
   | 'memories'
   | 'datePrep'
+  | 'lists'
+  | 'listItems'
+  | 'widgetEnabled'
   | 'accentPresetId'
 > {
   const calendars = defaultCalendars(couple);
+  const lists = defaultLists();
   return {
     calendars,
     busyPatterns: defaultBusyPatterns(couple, calendars),
@@ -122,6 +170,9 @@ export function workspaceForCouple(couple: Couple): Pick<
     keyDates: [],
     memories: [],
     datePrep: [],
+    lists: lists.lists,
+    listItems: lists.listItems,
+    widgetEnabled: true,
     accentPresetId: 'terracotta-sage',
   };
 }
@@ -142,6 +193,9 @@ export function createEmptyState(): PersistedState {
     keyDates: [],
     memories: [],
     datePrep: [],
+    lists: [],
+    listItems: [],
+    widgetEnabled: true,
     accentPresetId: 'terracotta-sage',
   };
 }
@@ -186,6 +240,7 @@ export function createDemoState(now = new Date()): PersistedState {
           startsAt: lantern.toISOString(),
           endsAt: addMinutes(lantern, 90).toISOString(),
           location: 'The lantern steps',
+          place: PLACE_LANTERN,
           notes: 'A short one before the week gets loud.',
           createdAt: nowIso(addHours(now, -5)),
         },
@@ -195,6 +250,7 @@ export function createDemoState(now = new Date()): PersistedState {
           startsAt: lantern.toISOString(),
           endsAt: addMinutes(lantern, 90).toISOString(),
           location: 'The lantern steps',
+          place: PLACE_LANTERN,
           notes: 'Yes — I’ll leave in a bit.',
           createdAt: nowIso(addHours(now, -4)),
         },
@@ -211,6 +267,7 @@ export function createDemoState(now = new Date()): PersistedState {
           startsAt: picnic.toISOString(),
           endsAt: addHours(picnic, 2).toISOString(),
           location: 'Riverside lawn',
+          place: PLACE_LAWN,
           notes: 'Picnic blanket, peaches, and the cheap sparkling we like.',
           createdAt: nowIso(addHours(now, -6)),
         },
@@ -227,6 +284,7 @@ export function createDemoState(now = new Date()): PersistedState {
           authorId: maya.id,
           startsAt: dinner.toISOString(),
           location: 'Goldfinch wine bar',
+          place: PLACE_GOLDFINCH,
           notes: 'Try the orange wine. Corner table if we can.',
           createdAt: nowIso(addDays(now, -2)),
         },
@@ -235,6 +293,7 @@ export function createDemoState(now = new Date()): PersistedState {
           authorId: jordan.id,
           startsAt: dinner.toISOString(),
           location: 'Goldfinch wine bar',
+          place: PLACE_GOLDFINCH,
           notes: 'Yes — 7pm is perfect. I’ll book.',
           createdAt: nowIso(addDays(now, -1)),
         },
@@ -252,6 +311,7 @@ export function createDemoState(now = new Date()): PersistedState {
           startsAt: walk.toISOString(),
           endsAt: addHours(walk, 1).toISOString(),
           location: 'The loop by the river',
+          place: PLACE_LOOP,
           notes: 'Just a walk and a hot chocolate after.',
           createdAt: nowIso(addDays(now, -8)),
         },
@@ -268,6 +328,7 @@ export function createDemoState(now = new Date()): PersistedState {
           authorId: maya.id,
           startsAt: brunch.toISOString(),
           location: 'The Little Oven',
+          place: PLACE_OVEN,
           notes: 'The table by the window, as always.',
           createdAt: nowIso(addDays(now, -38)),
         },
@@ -410,6 +471,62 @@ export function createDemoState(now = new Date()): PersistedState {
     },
   ];
 
+  const lists: SharedList[] = [
+    { id: 'list_groceries', kind: 'groceries', title: 'For the lantern steps', meetId: 'meet_lantern' },
+    { id: 'list_chores', kind: 'chores', title: 'Us chores' },
+  ];
+  const listItems: SharedListItem[] = [
+    {
+      id: 'g_peaches',
+      listId: 'list_groceries',
+      title: 'Peaches',
+      done: false,
+      aisle: 'Produce',
+      assigneeId: maya.id,
+      createdAt: nowIso(addHours(now, -8)),
+    },
+    {
+      id: 'g_sparkling',
+      listId: 'list_groceries',
+      title: 'Cheap sparkling',
+      done: false,
+      aisle: 'Drinks',
+      assigneeId: jordan.id,
+      createdAt: nowIso(addHours(now, -8)),
+    },
+    {
+      id: 'g_blanket',
+      listId: 'list_groceries',
+      title: 'Picnic blanket (already packed)',
+      done: true,
+      aisle: 'Other',
+      createdAt: nowIso(addHours(now, -20)),
+    },
+    {
+      id: 'c_recycling',
+      listId: 'list_chores',
+      title: 'Recycling out before we leave',
+      done: false,
+      assigneeId: jordan.id,
+      createdAt: nowIso(addHours(now, -10)),
+    },
+    {
+      id: 'c_camera',
+      listId: 'list_chores',
+      title: 'Charge the camera',
+      done: false,
+      assigneeId: maya.id,
+      createdAt: nowIso(addHours(now, -10)),
+    },
+    {
+      id: 'c_cabin',
+      listId: 'list_chores',
+      title: 'Text the cabin host about Friday',
+      done: true,
+      createdAt: nowIso(addDays(now, -1)),
+    },
+  ];
+
   return {
     version: 3,
     onboardingComplete: true,
@@ -425,6 +542,9 @@ export function createDemoState(now = new Date()): PersistedState {
     keyDates,
     memories,
     datePrep,
+    lists,
+    listItems,
+    widgetEnabled: true,
     accentPresetId: 'terracotta-sage',
   };
 }

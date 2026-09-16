@@ -3,10 +3,13 @@ import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, View } from 'react-native';
 
 import { WhenPicker } from '@/src/components/WhenPicker';
+import { LiveMap } from '@/src/components/LiveMap';
+import { PlacePicker } from '@/src/components/PlacePicker';
 import { BackRow, Body, Button, Display, Pill, Screen, TextField } from '@/src/components/ui';
 import { latestRevision, otherPartner } from '@/src/data/selectors';
 import { useAppStore } from '@/src/data/store';
 import { defaultProposeInput, firstParam } from '@/src/lib/propose';
+import type { PlaceRef } from '@/src/types';
 
 export default function ProposeScreen() {
   const router = useRouter();
@@ -43,6 +46,7 @@ export default function ProposeScreen() {
     ),
   );
   const [location, setLocation] = useState(seed?.location ?? prefillLocation ?? '');
+  const [place, setPlace] = useState<PlaceRef | undefined>(seed?.place);
   const [notes, setNotes] = useState(seed?.notes ?? prefillNotes ?? '');
 
   const title = useMemo(() => {
@@ -57,6 +61,7 @@ export default function ProposeScreen() {
       startsAt: when.startsAt,
       endsAt: when.endsAt,
       location,
+      place,
       notes,
       wishlistItemId: wishlistId || undefined,
     };
@@ -89,13 +94,19 @@ export default function ProposeScreen() {
         <WhenPicker value={when} onChange={setWhen} />
 
         <View style={{ height: 20 }} />
-        <TextField
-          label="Place or activity"
-          placeholder="Wine bar, walk, our kitchen…"
+        <PlacePicker
           value={location}
-          onChangeText={setLocation}
-          hint="Optional. Leave it open if the time matters more."
+          place={place}
+          onChange={({ text, place: nextPlace }) => {
+            setLocation(text);
+            setPlace(nextPlace);
+          }}
         />
+        {place ? (
+          <View style={{ marginTop: 12 }}>
+            <LiveMap place={place} />
+          </View>
+        ) : null}
         <View style={{ height: 16 }} />
         <TextField
           label="A little note"

@@ -176,3 +176,11 @@ export function upcomingReminders(keyDates: KeyDate[], now = new Date()): Remind
 export function prepForMeet(state: PersistedState, meetId: string) {
   return state.datePrep.filter((item) => item.meetId === meetId);
 }
+
+export function listByKind(state: PersistedState, kind: PersistedState['lists'][number]['kind']) {
+  return state.lists.find((list) => list.kind === kind) ?? null;
+}
+
+export function remainingListCount(state: PersistedState, listId: string): number {
+  return state.listItems.filter((item) => item.listId === listId && !item.done).length;
+}

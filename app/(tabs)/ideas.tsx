@@ -18,13 +18,13 @@ import {
 } from '@/src/components/ui';
 import { currentPartner, otherPartner, partnerById } from '@/src/data/selectors';
 import { useAppStore } from '@/src/data/store';
-import { BUDGET_COPY, suggestDates, VIBE_COPY } from '@/src/lib/assist';
+import { BUDGET_COPY, suggestDatesAssist, VIBE_COPY, type AssistResult } from '@/src/lib/assist';
 import { colors, fonts, radii, spacing } from '@/src/theme';
 import type { BudgetVibe, DateVibe, WishlistItem } from '@/src/types';
 
 export default function IdeasScreen() {
   const router = useRouter();
-  const { state, switchPartner, addWishlistItem, removeWishlistItem } = useAppStore();
+  const { account, state, switchPartner, addWishlistItem, removeWishlistItem } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const [tab, setTab] = useState<'wishlist' | 'assist'>('wishlist');
@@ -35,7 +35,9 @@ export default function IdeasScreen() {
   const [assistVibe, setAssistVibe] = useState<DateVibe>('cozy');
   const [assistBudget, setAssistBudget] = useState<BudgetVibe>('$');
   const [windowLabel, setWindowLabel] = useState<'weeknight' | 'weekend'>('weeknight');
-  const [suggestions, setSuggestions] = useState<ReturnType<typeof suggestDates> | null>(null);
+  const [assist, setAssist] = useState<AssistResult | null>(null);
+  const [assistBusy, setAssistBusy] = useState(false);
+  const [assistError, setAssistError] = useState<string | null>(null);
 
   if (!state.couple || !me || !them) {
     return <Redirect href="/onboarding" />;
@@ -58,10 +60,12 @@ export default function IdeasScreen() {
 
   return (
     <Screen>
-      <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      {account?.isSandbox ? (
+        <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      ) : null}
       <Display size={32}>Date ideas</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 16 }}>
-        A shared wishlist, plus a tiny on-device Assist that never leaves this phone.
+        A shared wishlist, plus Assist that asks a cloud model first and falls back on-device if the network is out.
       </Body>
       <Segmented
         options={[
@@ -136,9 +140,9 @@ export default function IdeasScreen() {
       ) : (
         <View style={{ marginTop: 20, gap: spacing.md }}>
           <Card style={{ gap: 8, backgroundColor: colors.goldSoft, borderColor: colors.gold }}>
-            <Pill label="On-device Assist" tone="gold" />
+            <Pill label={assist?.via === 'on-device' ? 'On-device fallback' : 'Cloud Assist'} tone="gold" />
             <Body small>
-              Not a cloud model. It scores your wishlist and a small recipe book against the vibe and budget you pick.
+              Assist calls a cloud LLM first (Pollinations by default, or your own OpenAI-compatible key). If the browser blocks that endpoint, it uses the on-device recipe book so you can still propose in one tap.
             </Body>
           </Card>
           <Label>Vibe</Label>
@@ -177,19 +181,44 @@ export default function IdeasScreen() {
             />
           </View>
           <Button
-            label="Suggest a few"
+            label={assistBusy ? 'Asking Assist…' : 'Suggest a few'}
             icon="sparkles-outline"
-            onPress={() => setSuggestions(suggestDates(state.wishlist, assistVibe, assistBudget))}
+            disabled={assistBusy}
+            onPress={async () => {
+              setAssistBusy(true);
+              setAssistError(null);
+              try {
+                const result = await suggestDatesAssist(state.wishlist, assistVibe, assistBudget, windowLabel);
+                setAssist(result);
+              } catch {
+                setAssistError('Assist could not reach the cloud. Try again in a moment.');
+              } finally {
+                setAssistBusy(false);
+              }
+            }}
           />
-          {suggestions ? (
+          {assistError ? (
+            <Body muted small>
+              {assistError}
+            </Body>
+          ) : null}
+          {assist ? (
             <View style={{ gap: 12 }}>
-              {suggestions.map((item) => (
+              <Body muted small>
+                {assist.via === 'cloud'
+                  ? `From the cloud${assist.model ? ` · ${assist.model}` : ''}`
+                  : 'Cloud Assist didn’t return ideas this time — these are on-device scores of your wishlist and recipe book.'}
+              </Body>
+              {assist.suggestions.map((item) => (
                 <Card key={item.id} style={{ gap: 8 }}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
                     <Display size={22} style={{ flex: 1 }}>
                       {item.title}
                     </Display>
-                    <Pill label={item.source === 'wishlist' ? 'Wishlist' : 'Recipe'} tone="gold" />
+                    <Pill
+                      label={item.source === 'wishlist' ? 'Wishlist' : item.source === 'cloud' ? 'Cloud' : 'Recipe'}
+                      tone="gold"
+                    />
                   </View>
                   <Body muted small>
                     {item.notes}

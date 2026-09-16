@@ -8,9 +8,19 @@
     "scheme": "againsoon",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.againsoon.app",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDisplayName": "Againsoon",
+        "NSLocationWhenInUseUsageDescription": "Againsoon can share how far you are in the hour before a confirmed meet, so you and your person can see the distance between you.",
+        "NSPhotoLibraryUsageDescription": "Againsoon can attach a photo to a memory of a date you shared."
+      }
     },
     "android": {
+      "package": "com.againsoon.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#161018",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -45,7 +55,8 @@
         {
           "photosPermission": "Againsoon can attach a photo to a memory of a date you shared."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true

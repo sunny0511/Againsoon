@@ -11,7 +11,7 @@ import { colors, spacing } from '@/src/theme';
 
 export default function CalendarScreen() {
   const router = useRouter();
-  const { state, switchPartner } = useAppStore();
+  const { account, state, switchPartner } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const accents = coupleAccents(state);
@@ -22,7 +22,9 @@ export default function CalendarScreen() {
 
   return (
     <Screen>
-      <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      {account?.isSandbox ? (
+        <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      ) : null}
       <Display size={32}>Both of you</Display>
       <Body muted style={{ marginTop: 8, marginBottom: 18 }}>
         Sample calendars, plus locked-in meets and open proposals. Tap a mutual free slot to propose.

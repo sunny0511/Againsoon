@@ -14,12 +14,20 @@ export type Couple = {
 
 export type MeetStatus = 'pending' | 'confirmed' | 'declined';
 
+export type PlaceRef = {
+  name: string;
+  lat: number;
+  lon: number;
+  label?: string;
+};
+
 export type MeetRevision = {
   id: string;
   authorId: string;
   startsAt: string;
   endsAt?: string;
   location?: string;
+  place?: PlaceRef;
   notes?: string;
   createdAt: string;
 };
@@ -41,6 +49,7 @@ export type ProposeInput = {
   startsAt: string;
   endsAt?: string;
   location?: string;
+  place?: PlaceRef;
   notes?: string;
   wishlistItemId?: string;
 };
@@ -117,6 +126,25 @@ export type DatePrepItem = {
   assigneeId?: string;
 };
 
+export type SharedListKind = 'groceries' | 'chores';
+
+export type SharedList = {
+  id: string;
+  kind: SharedListKind;
+  title: string;
+  meetId?: string;
+};
+
+export type SharedListItem = {
+  id: string;
+  listId: string;
+  title: string;
+  done: boolean;
+  aisle?: string;
+  assigneeId?: string;
+  createdAt: string;
+};
+
 export type AccentPresetId = 'terracotta-sage' | 'blush-sea' | 'honey-plum' | 'coral-dusk';
 
 export type PersistedState = {
@@ -134,5 +162,8 @@ export type PersistedState = {
   keyDates: KeyDate[];
   memories: Memory[];
   datePrep: DatePrepItem[];
+  lists: SharedList[];
+  listItems: SharedListItem[];
+  widgetEnabled: boolean;
   accentPresetId: AccentPresetId;
 };
