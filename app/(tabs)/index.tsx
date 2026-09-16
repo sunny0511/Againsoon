@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { DemoSwitcher } from '@/src/components/DemoSwitcher';
+import { LocationSharingCard } from '@/src/components/LocationSharingCard';
 import { MeetCard } from '@/src/components/MeetCard';
 import { AvatarStack, Body, Button, Card, Display, Label, Pill, Screen } from '@/src/components/ui';
 import { WeekStrip } from '@/src/components/WeekStrip';
@@ -82,6 +83,12 @@ export default function HomeScreen() {
             <Body muted>Once you both agree, it will live here.</Body>
           </Card>
         )}
+
+        {next ? (
+          <View style={{ marginBottom: spacing.lg }}>
+            <LocationSharingCard meet={next} compact />
+          </View>
+        ) : null}
 
         <View style={styles.section}>
           <Label>The next two weeks</Label>

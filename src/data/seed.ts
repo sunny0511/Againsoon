@@ -1,4 +1,4 @@
-import { addDays, addHours, nowIso, setTime } from '@/src/lib/dates';
+import { addDays, addHours, addMinutes, nowIso, setTime } from '@/src/lib/dates';
 import { createId, createInviteCode } from '@/src/lib/id';
 import type { Couple, Meet, PersistedState } from '@/src/types';
 
@@ -6,12 +6,13 @@ export const DEMO_INVITE_CODE = 'HONEY42';
 
 export function createEmptyState(): PersistedState {
   return {
-    version: 1,
+    version: 2,
     onboardingComplete: false,
     draftName: '',
     currentPartnerId: null,
     couple: null,
     meets: [],
+    locationSharingByPartnerId: {},
   };
 }
 
@@ -20,8 +21,8 @@ export function createDemoCouple(): Couple {
     id: 'couple_demo',
     inviteCode: DEMO_INVITE_CODE,
     partners: [
-      { id: 'p_maya', name: 'Maya', hue: '#C45D42' },
-      { id: 'p_jordan', name: 'Jordan', hue: '#4F6F62' },
+      { id: 'p_maya', name: 'Maya', hue: '#E08A6A' },
+      { id: 'p_jordan', name: 'Jordan', hue: '#7CBA9F' },
     ],
   };
 }
@@ -33,8 +34,35 @@ export function createDemoState(now = new Date()): PersistedState {
   const walk = setTime(addDays(now, -5), 18, 30);
   const dinner = setTime(addDays(now, 4), 19, 0);
   const picnic = setTime(addDays(now, 2), 18, 30);
+  const lantern = addMinutes(now, 48);
 
   const meets: Meet[] = [
+    {
+      id: 'meet_lantern',
+      status: 'confirmed',
+      createdAt: nowIso(addHours(now, -5)),
+      confirmedAt: nowIso(addHours(now, -4)),
+      revisions: [
+        {
+          id: createId('rev'),
+          authorId: maya.id,
+          startsAt: lantern.toISOString(),
+          endsAt: addMinutes(lantern, 90).toISOString(),
+          location: 'The lantern steps',
+          notes: 'A short one before the week gets loud.',
+          createdAt: nowIso(addHours(now, -5)),
+        },
+        {
+          id: createId('rev'),
+          authorId: jordan.id,
+          startsAt: lantern.toISOString(),
+          endsAt: addMinutes(lantern, 90).toISOString(),
+          location: 'The lantern steps',
+          notes: 'Yes — I’ll leave in a bit.',
+          createdAt: nowIso(addHours(now, -4)),
+        },
+      ],
+    },
     {
       id: 'meet_picnic',
       status: 'pending',
@@ -111,12 +139,13 @@ export function createDemoState(now = new Date()): PersistedState {
   ];
 
   return {
-    version: 1,
+    version: 2,
     onboardingComplete: true,
     draftName: maya.name,
     currentPartnerId: maya.id,
     couple,
     meets,
+    locationSharingByPartnerId: {},
   };
 }
 
@@ -124,12 +153,12 @@ export function createCoupleFromName(name: string): { couple: Couple; currentPar
   const you: Couple['partners'][0] = {
     id: createId('p'),
     name: name.trim() || 'You',
-    hue: '#C45D42',
+    hue: '#E08A6A',
   };
   const them: Couple['partners'][1] = {
     id: createId('p'),
     name: 'Your person',
-    hue: '#4F6F62',
+    hue: '#7CBA9F',
     isPlaceholder: true,
   };
 

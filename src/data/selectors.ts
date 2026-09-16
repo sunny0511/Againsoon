@@ -76,6 +76,16 @@ export function confirmedOnDay(meets: Meet[], day: Date): Meet[] {
   });
 }
 
+export function isSharingLocation(state: PersistedState, partnerId: string | null): boolean {
+  if (!partnerId) return false;
+  return Boolean(state.locationSharingByPartnerId[partnerId]);
+}
+
+export function bothSharingLocation(state: PersistedState): boolean {
+  if (!state.couple) return false;
+  return state.couple.partners.every((partner) => isSharingLocation(state, partner.id));
+}
+
 export function pendingOnDay(meets: Meet[], day: Date): Meet[] {
   return meets.filter((meet) => {
     if (meet.status !== 'pending') return false;

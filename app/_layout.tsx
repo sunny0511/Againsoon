@@ -44,7 +44,7 @@ export default function RootLayout() {
   return (
     <AppShell>
       <AppStoreProvider>
-        <StatusBar style="dark" />
+        <StatusBar style="light" />
         <Stack
           screenOptions={{
             headerShown: false,

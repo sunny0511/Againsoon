@@ -30,8 +30,8 @@ export function WeekStrip({
             <Text style={[styles.weekday, active && styles.activeText]}>{formatWeekday(day)}</Text>
             <Text style={[styles.date, active && styles.activeText]}>{day.getDate()}</Text>
             <View style={styles.dots}>
-              {confirmed ? <View style={[styles.dot, { backgroundColor: active ? colors.white : colors.sage }]} /> : null}
-              {pending ? <View style={[styles.dot, { backgroundColor: active ? colors.goldSoft : colors.gold }]} /> : null}
+              {confirmed ? <View style={[styles.dot, { backgroundColor: active ? colors.onInvert : colors.sage }]} /> : null}
+              {pending ? <View style={[styles.dot, { backgroundColor: active ? colors.gold : colors.gold }]} /> : null}
               {!confirmed && !pending ? <View style={styles.dotSpacer} /> : null}
             </View>
           </Pressable>
@@ -57,8 +57,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dayActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
+    backgroundColor: colors.invert,
+    borderColor: colors.invert,
   },
   weekday: {
     fontFamily: fonts.bodyMedium,
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   activeText: {
-    color: colors.white,
+    color: colors.onInvert,
   },
   dots: {
     flexDirection: 'row',

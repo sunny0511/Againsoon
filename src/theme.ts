@@ -1,21 +1,27 @@
+import { Platform, type ViewStyle } from 'react-native';
+
 export const colors = {
-  canvas: '#F4EBE3',
-  canvasDeep: '#E9DCD0',
-  ink: '#2A1F1A',
-  inkMuted: '#6F5F56',
-  inkSoft: '#A3948C',
-  accent: '#C45D42',
-  accentDeep: '#A34832',
-  accentSoft: '#F3D5CB',
-  sage: '#4F6F62',
-  sageSoft: '#D7E4DC',
-  gold: '#C9954A',
-  goldSoft: '#F3E4C8',
-  card: '#FFF9F4',
-  cardBorder: '#EADFD4',
-  danger: '#9B3A3A',
-  dangerSoft: '#F3D4D0',
-  white: '#FFFFFF',
+  canvas: '#17121C',
+  canvasDeep: '#100D14',
+  ink: '#F6EFE8',
+  inkMuted: '#C4B4C0',
+  inkSoft: '#8B7A88',
+  accent: '#E08A6A',
+  accentDeep: '#F0A790',
+  accentSoft: '#3A2430',
+  sage: '#7CBA9F',
+  sageSoft: '#1E322C',
+  gold: '#E0B25C',
+  goldSoft: '#3A2E1C',
+  card: '#231B28',
+  cardBorder: '#3C3244',
+  danger: '#E08A8A',
+  dangerSoft: '#3A2228',
+  white: '#F6EFE8',
+  onAccent: '#1A141F',
+  invert: '#F3EBE3',
+  onInvert: '#1A141F',
+  highlight: '#2F2434',
 } as const;
 
 export const spacing = {
@@ -44,12 +50,17 @@ export const fonts = {
   bodyBold: 'DMSans_700Bold',
 } as const;
 
-export const shadow = {
-  shadowColor: '#2A1F1A',
-  shadowOpacity: 0.08,
-  shadowRadius: 18,
-  shadowOffset: { width: 0, height: 8 },
-  elevation: 3,
-} as const;
+export const shadow: ViewStyle = Platform.select({
+  web: {
+    boxShadow: '0 16px 40px rgba(0, 0, 0, 0.35)',
+  },
+  default: {
+    shadowColor: '#000000',
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 6,
+  },
+})!;
 
 export const phoneMaxWidth = 430;

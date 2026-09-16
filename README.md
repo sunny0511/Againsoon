@@ -27,11 +27,12 @@ The fastest path for a product walkthrough:
 
 1. Open the app → **Get started** or **Try the demo couple**.
 2. On pairing, tap **Open demo couple** (Maya & Jordan).
-3. Home shows a confirmed dinner plus a pending picnic from Jordan.
-4. Open the picnic → **This time works**, or **Suggest a different time**, or **Can't make it**.
-5. Use the gold **Demo · viewing as Maya** banner to switch to Jordan and see the other side of a proposal.
-6. Tap **Suggest a time** to send a new meet, then switch profiles to accept it.
-7. **History** lists past meets. **You two** has the invite code (`HONEY·42` in the demo).
+3. Home shows a confirmed meet at the lantern steps (about 45 minutes out), Sunday dinner later, and a pending picnic from Jordan.
+4. Turn on **hour-before location** on Home or **You two**, then switch to Jordan and turn it on there too — you’ll see how far each of you is.
+5. Open the picnic → **This time works**, or **Suggest a different time**, or **Can't make it**.
+6. Use the **Demo · viewing as Maya** banner to switch to Jordan and see the other side of a proposal.
+7. Tap **Suggest a time** to send a new meet, then switch profiles to accept it.
+8. **History** lists past meets. **You two** has the invite code (`HONEY·42` in the demo).
 
 Invite codes:
 
@@ -44,7 +45,7 @@ Invite codes:
 - Home: next confirmed meet, 14-day strip, pending proposals
 - Propose a meet: day, time of day, optional window, place, note
 - Proposal detail: accept / counter / decline with a note / withdraw
-- Confirmed meet detail
+- Confirmed meet detail, including optional hour-before location sharing
 - Shared history of past and declined meets
 - Switch whose eyes you’re using (one-phone demo)
 
@@ -52,7 +53,7 @@ Invite codes:
 
 - Real accounts, push notifications, and a remote backend
 - Native calendar export (“Add to calendar” explains this)
-- Live location search and maps
+- Live maps / place search (hour-before distance is estimated; GPS is used when allowed)
 - Multi-device sync (state is AsyncStorage on this device)
 
 ## Project shape

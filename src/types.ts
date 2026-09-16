@@ -43,10 +43,11 @@ export type ProposeInput = {
 };
 
 export type PersistedState = {
-  version: 1;
+  version: 2;
   onboardingComplete: boolean;
   draftName: string;
   currentPartnerId: string | null;
   couple: Couple | null;
   meets: Meet[];
+  locationSharingByPartnerId: Record<string, boolean>;
 };

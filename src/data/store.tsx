@@ -34,6 +34,7 @@ type Action =
   | { type: 'DECLINE'; meetId: string; note?: string }
   | { type: 'WITHDRAW'; meetId: string }
   | { type: 'CANCEL_CONFIRMED'; meetId: string; note?: string }
+  | { type: 'SET_LOCATION_SHARING'; enabled: boolean }
   | { type: 'RESET' };
 
 function requireCurrent(state: PersistedState): string {
@@ -231,6 +232,16 @@ function reducer(state: PersistedState, action: Action): PersistedState {
         }),
       };
     }
+    case 'SET_LOCATION_SHARING': {
+      if (!state.currentPartnerId) return state;
+      return {
+        ...state,
+        locationSharingByPartnerId: {
+          ...state.locationSharingByPartnerId,
+          [state.currentPartnerId]: action.enabled,
+        },
+      };
+    }
     case 'RESET':
       return createEmptyState();
     default:
@@ -258,6 +269,7 @@ type StoreValue = {
   decline: (meetId: string, note?: string) => void;
   withdraw: (meetId: string) => void;
   cancelConfirmed: (meetId: string, note?: string) => void;
+  setLocationSharing: (enabled: boolean) => void;
   reset: () => void;
 };
 
@@ -310,6 +322,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       decline: (meetId, note) => dispatch({ type: 'DECLINE', meetId, note }),
       withdraw: (meetId) => dispatch({ type: 'WITHDRAW', meetId }),
       cancelConfirmed: (meetId, note) => dispatch({ type: 'CANCEL_CONFIRMED', meetId, note }),
+      setLocationSharing: (enabled) => dispatch({ type: 'SET_LOCATION_SHARING', enabled }),
       reset: () => {
         clearState().catch(() => {});
         dispatch({ type: 'RESET' });

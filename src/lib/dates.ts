@@ -59,6 +59,12 @@ export function addHours(date: Date, amount: number): Date {
   return next;
 }
 
+export function addMinutes(date: Date, amount: number): Date {
+  const next = new Date(date);
+  next.setMinutes(next.getMinutes() + amount);
+  return next;
+}
+
 export function setTime(date: Date, hours: number, minutes: number): Date {
   const next = new Date(date);
   next.setHours(hours, minutes, 0, 0);

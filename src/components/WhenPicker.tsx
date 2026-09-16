@@ -165,8 +165,8 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   chipActive: {
-    backgroundColor: colors.ink,
-    borderColor: colors.ink,
+    backgroundColor: colors.invert,
+    borderColor: colors.invert,
   },
   chipKicker: {
     fontFamily: fonts.bodyMedium,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
     color: colors.ink,
   },
   chipActiveText: {
-    color: colors.white,
+    color: colors.onInvert,
   },
   slot: {
     width: '48%',

@@ -6,6 +6,7 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -134,10 +135,10 @@ export function Button({
   style?: StyleProp<ViewStyle>;
 }) {
   const palette = {
-    primary: { bg: colors.accent, fg: colors.white },
+    primary: { bg: colors.accent, fg: colors.onAccent },
     secondary: { bg: colors.accentSoft, fg: colors.accentDeep },
     ghost: { bg: 'transparent', fg: colors.ink },
-    sage: { bg: colors.sage, fg: colors.white },
+    sage: { bg: colors.sage, fg: colors.onAccent },
     danger: { bg: colors.dangerSoft, fg: colors.danger },
   }[variant];
 
@@ -244,6 +245,36 @@ export function LoadingScreen() {
   return (
     <View style={[styles.shell, { justifyContent: 'center', alignItems: 'center' }]}>
       <ActivityIndicator color={colors.accent} />
+    </View>
+  );
+}
+
+export function ToggleRow({
+  label,
+  description,
+  value,
+  onValueChange,
+}: {
+  label: string;
+  description: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+}) {
+  return (
+    <View style={styles.toggleRow}>
+      <View style={{ flex: 1, paddingRight: 12 }}>
+        <Text style={styles.toggleLabel}>{label}</Text>
+        <Body muted small>
+          {description}
+        </Body>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        trackColor={{ false: colors.cardBorder, true: colors.accent }}
+        thumbColor={value ? colors.invert : colors.inkMuted}
+        ios_backgroundColor={colors.cardBorder}
+      />
     </View>
   );
 }
@@ -385,6 +416,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bodyMedium,
     fontSize: 16,
     color: colors.ink,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toggleLabel: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 16,
+    color: colors.ink,
+    marginBottom: 4,
   },
   mark: {
     height: 140,

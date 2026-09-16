@@ -3,6 +3,7 @@ import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { LocationSharingCard } from '@/src/components/LocationSharingCard';
 import {
   BackRow,
   Body,
@@ -80,6 +81,12 @@ export default function MeetDetailScreen() {
           )}
           {revision.notes ? <Row icon="chatbubble-ellipses-outline" label={revision.notes} /> : null}
         </Card>
+
+        {meet.status === 'confirmed' && !past ? (
+          <View style={{ marginTop: spacing.lg }}>
+            <LocationSharingCard meet={meet} />
+          </View>
+        ) : null}
 
         <View style={{ marginTop: spacing.xl }}>
           <Label>How you got here</Label>
@@ -215,7 +222,7 @@ const styles = StyleSheet.create({
   },
   threadLatest: {
     borderColor: colors.accentSoft,
-    backgroundColor: '#FFF4EE',
+    backgroundColor: colors.highlight,
   },
   threadWho: {
     fontFamily: fonts.bodySemi,

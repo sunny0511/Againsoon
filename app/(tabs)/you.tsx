@@ -3,15 +3,16 @@ import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Platform, Share, View } from 'react-native';
 
-import { AvatarStack, Body, Button, Card, Display, Label, Screen, TextField } from '@/src/components/ui';
-import { currentPartner, otherPartner } from '@/src/data/selectors';
+import { AvatarStack, Body, Button, Card, Display, Label, Screen, TextField, ToggleRow } from '@/src/components/ui';
+import { currentPartner, isSharingLocation, otherPartner } from '@/src/data/selectors';
 import { useAppStore } from '@/src/data/store';
+import { requestOwnLocation } from '@/src/lib/location';
 import { formatInviteCode } from '@/src/lib/id';
 import { spacing } from '@/src/theme';
 
 export default function YouScreen() {
   const router = useRouter();
-  const { state, switchPartner, namePartner, reset } = useAppStore();
+  const { state, switchPartner, namePartner, reset, setLocationSharing } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const [partnerName, setPartnerName] = useState(them?.isPlaceholder ? '' : (them?.name ?? ''));
@@ -78,6 +79,19 @@ export default function YouScreen() {
             You’re viewing the app as {me.name}. Switch to see pending proposals from the other side.
           </Body>
           <Button label={`Switch to ${them.name}`} variant="secondary" onPress={switchPartner} />
+        </Card>
+
+        <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
+          <Display size={22}>Hour-before location</Display>
+          <ToggleRow
+            label="Share how far I am"
+            description="Optional. Starting one hour before a confirmed meet, you and your person can see how far each of you is. Nothing is shared until both of you turn this on."
+            value={isSharingLocation(state, me.id)}
+            onValueChange={(value) => {
+              setLocationSharing(value);
+              if (value) requestOwnLocation();
+            }}
+          />
         </Card>
 
         <Card style={{ gap: spacing.md, marginTop: spacing.md }}>
