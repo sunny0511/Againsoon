@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button, Display } from '@/src/components/ui';
 import { colors, fonts, radii, spacing } from '@/src/theme';
@@ -21,8 +21,8 @@ export function LockInMoment({
     opacity.setValue(0);
     scale.setValue(0.92);
     Animated.parallel([
-      Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: true }),
-      Animated.spring(scale, { toValue: 1, friction: 7, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 1, duration: 280, useNativeDriver: Platform.OS !== 'web' }),
+      Animated.spring(scale, { toValue: 1, friction: 7, useNativeDriver: Platform.OS !== 'web' }),
     ]).start();
   }, [visible, opacity, scale]);
 
