@@ -7,6 +7,8 @@ import { DemoSwitcher } from '@/src/components/DemoSwitcher';
 import { LocationSharingCard } from '@/src/components/LocationSharingCard';
 import { MeetCard } from '@/src/components/MeetCard';
 import { MemoryCard } from '@/src/components/MemoryCard';
+import { NextMeetWidget } from '@/src/components/NextMeetWidget';
+import { SharedListCard } from '@/src/components/SharedListCard';
 import {
   AvatarStack,
   Body,
@@ -23,6 +25,7 @@ import {
   coupleAccents,
   currentPartner,
   latestRevision,
+  listByKind,
   otherPartner,
   pendingMeets,
   prepForMeet,
@@ -48,6 +51,8 @@ export default function HomeScreen() {
   const keyDates = useMemo(() => upcomingKeyDates(state.keyDates).slice(0, 2), [state.keyDates]);
   const memories = useMemo(() => sortedMemories(state.memories).slice(0, 6), [state.memories]);
   const prep = next ? prepForMeet(state, next.id) : [];
+  const groceries = listByKind(state, 'groceries');
+  const chores = listByKind(state, 'chores');
 
   const couple = state.couple;
   const currentPartnerId = state.currentPartnerId;
@@ -164,6 +169,31 @@ export default function HomeScreen() {
           </Body>
           <DatePrepList meetId={next.id} />
         </Card>
+      ) : null}
+
+      {groceries ? (
+        <View style={{ marginBottom: spacing.lg }}>
+          <SectionHeader title="Groceries" action="Us" onAction={() => router.push('/(tabs)/us')} />
+          <Card>
+            <SharedListCard list={groceries} compact />
+          </Card>
+        </View>
+      ) : null}
+
+      {chores ? (
+        <View style={{ marginBottom: spacing.lg }}>
+          <SectionHeader title="Chores" action="Us" onAction={() => router.push('/(tabs)/us')} />
+          <Card>
+            <SharedListCard list={chores} compact />
+          </Card>
+        </View>
+      ) : null}
+
+      {state.widgetEnabled ? (
+        <View style={{ marginBottom: spacing.lg }}>
+          <SectionHeader title="Home widget" action="Open" onAction={() => router.push('/widget')} />
+          <NextMeetWidget state={state} onPress={() => router.push('/widget')} />
+        </View>
       ) : null}
 
       <View style={styles.section}>

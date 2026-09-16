@@ -1,3 +1,4 @@
+import { completeChat, parseJsonPayload } from '@/src/lib/llm';
 import type { BudgetVibe, DateVibe, WishlistItem } from '@/src/types';
 
 export type AssistTemplate = {
@@ -73,6 +74,8 @@ export const ASSIST_TEMPLATES: AssistTemplate[] = [
   },
 ];
 
+export type AssistSource = 'wishlist' | 'recipe' | 'cloud';
+
 export type AssistSuggestion = {
   id: string;
   title: string;
@@ -80,8 +83,14 @@ export type AssistSuggestion = {
   location?: string;
   budget: BudgetVibe;
   vibe: DateVibe;
-  source: 'wishlist' | 'recipe';
+  source: AssistSource;
   wishlistItemId?: string;
+};
+
+export type AssistResult = {
+  suggestions: AssistSuggestion[];
+  via: 'cloud' | 'on-device';
+  model?: string;
 };
 
 function scoreItem(
@@ -166,6 +175,73 @@ export function suggestDates(
   }
 
   return merged.slice(0, 3);
+}
+
+const VIBES: DateVibe[] = ['cozy', 'outdoors', 'foodie', 'surprise'];
+const BUDGETS: BudgetVibe[] = ['free', '$', '$$'];
+
+export async function suggestDatesAssist(
+  wishlist: WishlistItem[],
+  vibe: DateVibe,
+  budget: BudgetVibe,
+  windowLabel: 'weeknight' | 'weekend',
+): Promise<AssistResult> {
+  const fallback = suggestDates(wishlist, vibe, budget);
+  try {
+    const cloud = await suggestDatesFromCloud(wishlist, vibe, budget, windowLabel);
+    if (cloud.suggestions.length >= 2) return cloud;
+  } catch {
+    // Local scorer still works if the cloud model is down or blocked.
+  }
+  return { suggestions: fallback, via: 'on-device' };
+}
+
+async function suggestDatesFromCloud(
+  wishlist: WishlistItem[],
+  vibe: DateVibe,
+  budget: BudgetVibe,
+  windowLabel: 'weeknight' | 'weekend',
+): Promise<AssistResult> {
+  const wishLines = wishlist.length
+    ? wishlist.map((item) => `- ${item.title}${item.notes ? ` (${item.notes})` : ''} [${item.budget}/${item.vibe ?? 'any'}]`).join('\n')
+    : '- (wishlist empty)';
+
+  const { text, model } = await completeChat([
+    {
+      role: 'system',
+      content:
+        'You are Againsoon Assist, a couples date-planning helper. Reply with JSON only, no markdown. Shape: {"ideas":[{"title":string,"notes":string,"location":string,"budget":"free"|"$"|"$$","vibe":"cozy"|"outdoors"|"foodie"|"surprise"}]}. Give 2 or 3 specific, warm, doable ideas. Prefer the couple wishlist when it fits. Keep notes to one or two sentences.',
+    },
+    {
+      role: 'user',
+      content: `Vibe: ${vibe}. Budget: ${budget}. Window: ${windowLabel}.\nWishlist:\n${wishLines}`,
+    },
+  ]);
+
+  const parsed = parseJsonPayload<{ ideas?: Array<Record<string, string>> }>(text);
+  const ideas = parsed?.ideas ?? [];
+  const suggestions: AssistSuggestion[] = [];
+  for (const [index, idea] of ideas.entries()) {
+    const title = idea.title?.trim();
+    if (!title) continue;
+    const ideaBudget = BUDGETS.includes(idea.budget as BudgetVibe) ? (idea.budget as BudgetVibe) : budget;
+    const ideaVibe = VIBES.includes(idea.vibe as DateVibe) ? (idea.vibe as DateVibe) : vibe;
+    const match = wishlist.find((item) => item.title.toLowerCase() === title.toLowerCase());
+    const location = idea.location?.trim();
+    suggestions.push({
+      id: `cloud-${index}-${title.slice(0, 18)}`,
+      title,
+      notes: idea.notes?.trim() || 'A night that fits the two of you.',
+      location: location || undefined,
+      budget: ideaBudget,
+      vibe: ideaVibe,
+      source: match ? 'wishlist' : 'cloud',
+      wishlistItemId: match?.id,
+    });
+    if (suggestions.length >= 3) break;
+  }
+
+  return { suggestions, via: 'cloud', model };
 }
 
 export const VIBE_COPY: Record<DateVibe, string> = {

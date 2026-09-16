@@ -89,3 +89,39 @@ export async function requestOwnLocation(): Promise<Coords | null> {
 function addMs(date: Date, ms: number): Date {
   return new Date(date.getTime() + ms);
 }
+
+export function haversineMeters(a: Coords, b: Coords): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const lat1 = toRad(a.latitude);
+  const lat2 = toRad(b.latitude);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
+}
+
+export function proximityFromCoords(you: Coords, them: Coords, venue: Coords): ProximitySnapshot {
+  const youMeters = haversineMeters(you, venue);
+  const themMeters = haversineMeters(them, venue);
+  const apartMeters = haversineMeters(you, them);
+  const youProgress = Math.max(0, Math.min(1, 1 - youMeters / 2800));
+  const themProgress = Math.max(0, Math.min(1, 1 - themMeters / 2800));
+  return {
+    youMeters,
+    themMeters,
+    apartMeters,
+    youMinutes: walkingMinutes(youMeters),
+    themMinutes: walkingMinutes(themMeters),
+    apartMinutes: walkingMinutes(apartMeters),
+    youProgress,
+    themProgress,
+  };
+}
+
+export function offsetCoords(origin: Coords, metersEast: number, metersNorth: number): Coords {
+  return {
+    latitude: origin.latitude + metersNorth / 111_111,
+    longitude: origin.longitude + metersEast / (111_111 * Math.cos((origin.latitude * Math.PI) / 180)),
+  };
+}
