@@ -19,6 +19,8 @@ Then:
 - Scan the QR code with **Expo Go** on iOS or Android.
 - `npx expo start --web` opens the web preview directly.
 
+On a phone, use Expo Go rather than a `localhost` link from another machine.
+
 Node 20+ is enough. No native Xcode/Android Studio build is required for the MVP.
 
 ## Demo the competitive walkthrough
