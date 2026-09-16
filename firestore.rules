@@ -1,0 +1,160 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function couplePath(coupleId) {
+      return /databases/$(database)/documents/couples/$(coupleId);
+    }
+
+    function coupleData(coupleId) {
+      return get(couplePath(coupleId)).data;
+    }
+
+    function coupleDataAfter(coupleId) {
+      return getAfter(couplePath(coupleId)).data;
+    }
+
+    function isMember(coupleId) {
+      return isSignedIn()
+        && exists(couplePath(coupleId))
+        && request.auth.uid in coupleData(coupleId).memberUids;
+    }
+
+    function isMemberAfter(coupleId) {
+      return isSignedIn()
+        && existsAfter(couplePath(coupleId))
+        && request.auth.uid in coupleDataAfter(coupleId).memberUids;
+    }
+
+    function invitePath(code) {
+      return /databases/$(database)/documents/inviteCodes/$(code);
+    }
+
+    function inviteIsLive(code) {
+      return exists(invitePath(code))
+        && get(invitePath(code)).data.coupleId is string
+        && get(invitePath(code)).data.expiresAtMs is number
+        && get(invitePath(code)).data.expiresAtMs > request.time.toMillis();
+    }
+
+    function onlyKeys(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    function validPartners(value) {
+      return value is list && value.size() == 2;
+    }
+
+    // Join: not yet a member, couple is open, invite is live, only membership fields change.
+    function joinCouple(coupleId) {
+      let before = resource.data;
+      let after = request.resource.data;
+      return isSignedIn()
+        && before.memberUids is list
+        && after.memberUids is list
+        && before.memberUids.size() < 2
+        && after.memberUids.size() == before.memberUids.size() + 1
+        && !(request.auth.uid in before.memberUids)
+        && request.auth.uid in after.memberUids
+        && after.inviteCode == before.inviteCode
+        && inviteIsLive(before.inviteCode)
+        && validPartners(after.partners)
+        && onlyKeys(['memberUids', 'partners', 'updatedAt']);
+    }
+
+    // Leave: drop yourself only. Remaining member keeps the couple space.
+    function leaveCouple(coupleId) {
+      let before = resource.data;
+      let after = request.resource.data;
+      return isSignedIn()
+        && before.memberUids is list
+        && after.memberUids is list
+        && request.auth.uid in before.memberUids
+        && !(request.auth.uid in after.memberUids)
+        && after.memberUids.size() == before.memberUids.size() - 1
+        && after.inviteCode == before.inviteCode
+        && validPartners(after.partners)
+        && onlyKeys(['memberUids', 'partners', 'updatedAt']);
+    }
+
+    match /users/{uid} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == uid
+        || (
+          resource.data.coupleId is string
+          && isMember(resource.data.coupleId)
+        )
+      );
+      allow create: if isSignedIn()
+        && request.auth.uid == uid
+        && request.resource.data.uid == uid;
+      allow update: if isSignedIn() && request.auth.uid == uid;
+      allow delete: if false;
+    }
+
+    // Codes are unguessable (word + digits). Signed-in users may look up one code to join.
+    // Listing every code is forbidden.
+    match /inviteCodes/{code} {
+      allow get: if isSignedIn();
+      allow list: if false;
+      allow create: if isSignedIn()
+        && request.resource.data.coupleId is string
+        && request.resource.data.expiresAtMs is number
+        && request.resource.data.expiresAtMs > request.time.toMillis()
+        && isMemberAfter(request.resource.data.coupleId);
+      allow update: if isSignedIn()
+        && isMemberAfter(resource.data.coupleId)
+        && isMemberAfter(request.resource.data.coupleId);
+      allow delete: if isSignedIn() && isMember(resource.data.coupleId);
+    }
+
+    match /couples/{coupleId} {
+      allow get: if isMember(coupleId)
+        || (
+          isSignedIn()
+          && resource.data.memberUids is list
+          && resource.data.memberUids.size() < 2
+        );
+      allow list: if false;
+
+      allow create: if isSignedIn()
+        && request.resource.data.memberUids is list
+        && request.resource.data.memberUids.size() == 1
+        && request.auth.uid in request.resource.data.memberUids
+        && request.resource.data.inviteCode is string
+        && validPartners(request.resource.data.partners);
+
+      allow update: if isMember(coupleId)
+        || joinCouple(coupleId)
+        || leaveCouple(coupleId);
+
+      allow delete: if false;
+
+      match /{collection}/{docId} {
+        allow read: if isMember(coupleId)
+          && collection in [
+            'meets',
+            'wishlist',
+            'keyDates',
+            'memories',
+            'datePrep',
+            'calendars',
+            'busyPatterns'
+          ];
+        allow write: if isMemberAfter(coupleId)
+          && collection in [
+            'meets',
+            'wishlist',
+            'keyDates',
+            'memories',
+            'datePrep',
+            'calendars',
+            'busyPatterns'
+          ];
+      }
+    }
+  }
+}

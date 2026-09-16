@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { DatePrepList } from '@/src/components/DatePrepList';
-import { DemoSwitcher } from '@/src/components/DemoSwitcher';
+import { SessionBanner } from '@/src/components/SessionBanner';
 import { LocationSharingCard } from '@/src/components/LocationSharingCard';
 import { MeetCard } from '@/src/components/MeetCard';
 import { MemoryCard } from '@/src/components/MemoryCard';
@@ -14,6 +14,7 @@ import {
   Card,
   Display,
   Label,
+  LoadingScreen,
   Pill,
   ProgressBar,
   Screen,
@@ -30,14 +31,14 @@ import {
   upcomingConfirmed,
   upcomingKeyDates,
 } from '@/src/data/selectors';
-import { useAppStore } from '@/src/data/store';
+import { isCloudCoupleReady, useAppStore } from '@/src/data/store';
 import { cadenceLabel, goalProgress, nudgeCopy } from '@/src/lib/goals';
 import { formatCountdown, formatLongDate, formatTimeRange } from '@/src/lib/dates';
 import { colors, fonts, radii, spacing } from '@/src/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const { hydrated, state, switchPartner } = useAppStore();
+  const { hydrated, state, session } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const accents = coupleAccents(state);
@@ -51,7 +52,8 @@ export default function HomeScreen() {
 
   const couple = state.couple;
   const currentPartnerId = state.currentPartnerId;
-  if (!hydrated) return null;
+  if (!hydrated) return <LoadingScreen />;
+  if (session.kind === 'paired' && !isCloudCoupleReady(session, state)) return <LoadingScreen />;
   if (!couple || !me || !them || !currentPartnerId) {
     return <Redirect href="/onboarding" />;
   }
@@ -60,7 +62,7 @@ export default function HomeScreen() {
 
   return (
     <Screen>
-      <DemoSwitcher current={me} other={them} onSwitch={switchPartner} />
+      <SessionBanner />
 
       <View style={styles.heroHeader}>
         <View style={{ flex: 1 }}>

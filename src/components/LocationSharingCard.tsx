@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Avatar, Body, Button, Card, Display, ToggleRow } from '@/src/components/ui';
 import { bothSharingLocation, currentPartner, isSharingLocation, otherPartner } from '@/src/data/selectors';
-import { useAppStore } from '@/src/data/store';
+import { canSwitchPartner, useAppStore } from '@/src/data/store';
 import { formatMeters, isLocationWindowOpen, msUntilLocationWindow, proximityForMeet, requestOwnLocation } from '@/src/lib/location';
 import { colors, radii, spacing } from '@/src/theme';
 import type { Meet, Partner } from '@/src/types';
@@ -15,7 +15,7 @@ export function LocationSharingCard({
   meet: Meet;
   compact?: boolean;
 }) {
-  const { state, setLocationSharing, switchPartner } = useAppStore();
+  const { state, session, setLocationSharing, switchPartner } = useAppStore();
   const me = currentPartner(state);
   const them = otherPartner(state);
   const [live, setLive] = useState(false);
@@ -77,9 +77,14 @@ export function LocationSharingCard({
       ) : !isSharingLocation(state, them.id) ? (
         <View style={{ gap: 10 }}>
           <Body muted small>
-            Waiting on {them.name} to turn this on too. On one phone, switch profiles to opt in as them.
+            Waiting on {them.name} to turn this on too.
+            {canSwitchPartner(session)
+              ? ' On one phone, switch profiles to opt in as them.'
+              : ` Ask ${them.name} to turn it on from their phone.`}
           </Body>
-          <Button label={`Switch to ${them.name}`} variant="secondary" onPress={switchPartner} />
+          {canSwitchPartner(session) ? (
+            <Button label={`Switch to ${them.name}`} variant="secondary" onPress={switchPartner} />
+          ) : null}
         </View>
       ) : !windowOpen ? (
         <Body muted small>

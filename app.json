@@ -8,9 +8,11 @@
     "scheme": "againsoon",
     "userInterfaceStyle": "dark",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.againsoon.app"
     },
     "android": {
+      "package": "com.againsoon.app",
       "adaptiveIcon": {
         "backgroundColor": "#161018",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -49,6 +51,16 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "firebase": {
+        "apiKey": "",
+        "authDomain": "",
+        "projectId": "",
+        "storageBucket": "",
+        "messagingSenderId": "",
+        "appId": ""
+      }
     }
   }
 }

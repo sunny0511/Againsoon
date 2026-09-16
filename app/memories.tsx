@@ -1,18 +1,19 @@
 import { Redirect, useRouter } from 'expo-router';
 
 import { MemoryCard } from '@/src/components/MemoryCard';
-import { BackRow, Body, Display, EmptyState, Screen } from '@/src/components/ui';
+import { BackRow, Body, Display, EmptyState, LoadingScreen, Screen } from '@/src/components/ui';
 import { currentPartner, latestRevision, sortedMemories } from '@/src/data/selectors';
-import { useAppStore } from '@/src/data/store';
+import { isCloudCoupleReady, useAppStore } from '@/src/data/store';
 import { spacing } from '@/src/theme';
 import { View } from 'react-native';
 
 export default function MemoriesScreen() {
   const router = useRouter();
-  const { state } = useAppStore();
+  const { state, session } = useAppStore();
   const me = currentPartner(state);
   const memories = sortedMemories(state.memories);
 
+  if (session.kind === 'paired' && !isCloudCoupleReady(session, state)) return <LoadingScreen />;
   if (!state.couple || !me) {
     return <Redirect href="/onboarding" />;
   }

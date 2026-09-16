@@ -6,6 +6,10 @@ import type { AccentPresetId, DateGoalCadence, PersistedState } from '@/src/type
 
 export const STORAGE_KEY = 'againsoon.state.v3';
 export const LEGACY_STORAGE_KEY = 'againsoon.state.v2';
+export const MODE_KEY = 'againsoon.mode.v1';
+export const EMAIL_FOR_SIGN_IN_KEY = 'againsoon.emailForSignIn';
+
+export type LocalSessionMode = 'demo' | 'local';
 
 const CADENCES: DateGoalCadence[] = ['weekly', 'biweekly', 'twiceWeekly', 'monthly'];
 const PRESETS: AccentPresetId[] = ['terracotta-sage', 'blush-sea', 'honey-plum', 'coral-dusk'];
@@ -59,5 +63,35 @@ export async function saveState(state: PersistedState): Promise<void> {
 }
 
 export async function clearState(): Promise<void> {
-  await AsyncStorage.multiRemove([STORAGE_KEY, LEGACY_STORAGE_KEY]);
+  await AsyncStorage.multiRemove([STORAGE_KEY, LEGACY_STORAGE_KEY, MODE_KEY]);
+}
+
+export async function loadMode(): Promise<LocalSessionMode | null> {
+  try {
+    const raw = await AsyncStorage.getItem(MODE_KEY);
+    if (raw === 'demo' || raw === 'local') return raw;
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function saveMode(mode: LocalSessionMode | null): Promise<void> {
+  if (!mode) {
+    await AsyncStorage.removeItem(MODE_KEY);
+    return;
+  }
+  await AsyncStorage.setItem(MODE_KEY, mode);
+}
+
+export async function rememberEmailForSignIn(email: string): Promise<void> {
+  await AsyncStorage.setItem(EMAIL_FOR_SIGN_IN_KEY, email.trim());
+}
+
+export async function readEmailForSignIn(): Promise<string | null> {
+  return AsyncStorage.getItem(EMAIL_FOR_SIGN_IN_KEY);
+}
+
+export async function clearEmailForSignIn(): Promise<void> {
+  await AsyncStorage.removeItem(EMAIL_FOR_SIGN_IN_KEY);
 }
